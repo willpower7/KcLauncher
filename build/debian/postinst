@@ -19,6 +19,11 @@ if [ "$1" = "configure" ]; then
         udevadm trigger --subsystem-match=usb || true
     fi
 
+    # Create symlink in /usr/bin
+    if [ -f "/opt/Keychron Launcher/kclauncher" ]; then
+        ln -sf "/opt/Keychron Launcher/kclauncher" /usr/bin/kclauncher
+    fi
+
     # Update desktop database
     if [ -x /usr/bin/update-desktop-database ]; then
         update-desktop-database -q /usr/share/applications || true
