@@ -2,6 +2,9 @@
 
 **KcLauncher** is a native Linux desktop application port of the **Keychron Launcher** (`launcher.keychron.com`) packaged into a standalone `.deb` package. It enables full customization of Keychron keyboards and mice—including key remapping, RGB backlighting, rotary encoders, macros, and firmware flashing—**without opening a web browser**.
 
+> [!NOTE]
+> **Disclaimer**: KcLauncher is an independent, open-source community project. It is not affiliated with, maintained, authorized, sponsored, or endorsed by Keychron or any of its affiliates. "Keychron" and all associated product names and marks are trademarks of their respective owners.
+
 ---
 
 ## Why KcLauncher?
@@ -151,6 +154,7 @@ Once installed:
 
 ---
 
-## License
+## Disclaimer & License
 
-MIT License. See [LICENSE](LICENSE) for details. Keychron Launcher web interface and trademarks are the property of Keychron.
+- **Disclaimer**: KcLauncher is an independent, unofficial community project and is not affiliated with, endorsed by, or sponsored by Keychron. "Keychron", "Lemokey", and associated logos, product names, and web assets are trademarks and property of Keychron.
+- **License**: The wrapper and packaging source code are licensed under the [MIT License](LICENSE).
