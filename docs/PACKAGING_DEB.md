@@ -24,7 +24,7 @@ When the generated `.deb` is installed on a user's machine, it populates:
 
 ## 2. Package Configuration
 
-Packaging is configured in [build/electron-builder.yml](file:///home/willi/Projects/KcLauncher/build/electron-builder.yml):
+Packaging is configured in [build/electron-builder.yml](../build/electron-builder.yml):
 
 ```yaml
 appId: com.willpower7.kclauncher

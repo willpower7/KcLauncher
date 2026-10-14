@@ -27,7 +27,7 @@ When a web browser or application attempts to connect via WebHID, the kernel den
 
 Linux uses `udev` to dynamically set device node permissions when hardware is plugged into a USB port.
 
-KcLauncher includes [build/udev/60-keychron.rules](file:///home/willi/Projects/KcLauncher/build/udev/60-keychron.rules):
+KcLauncher includes [60-keychron.rules](../build/udev/60-keychron.rules):
 
 ```udev
 # Vendor ID 0x3434 (Keychron / Lemokey keyboards and mice)
@@ -58,7 +58,7 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE="0660"
 When you install KcLauncher from the `.deb` package:
 
 1. `dpkg` places `60-keychron.rules` into `/lib/udev/rules.d/60-keychron.rules`.
-2. The package [postinst](file:///home/willi/Projects/KcLauncher/build/debian/postinst) script runs:
+2. The package [postinst](../build/debian/postinst) script runs:
    ```bash
    udevadm control --reload-rules
    udevadm trigger --subsystem-match=hidraw

@@ -144,13 +144,13 @@ Once installed:
 
 ## Documentation Links
 
-- [System Architecture & WebHID Design](file:///home/willi/Projects/KcLauncher/docs/ARCHITECTURE.md)
-- [Linux udev Rules Reference](file:///home/willi/Projects/KcLauncher/docs/LINUX_UDEV_GUIDE.md)
-- [Debian Packaging Guide](file:///home/willi/Projects/KcLauncher/docs/PACKAGING_DEB.md)
-- [Project Roadmap](file:///home/willi/Projects/KcLauncher/docs/ROADMAP.md)
+- [System Architecture & WebHID Design](docs/ARCHITECTURE.md)
+- [Linux udev Rules Reference](docs/LINUX_UDEV_GUIDE.md)
+- [Debian Packaging Guide](docs/PACKAGING_DEB.md)
+- [Project Roadmap](docs/ROADMAP.md)
 
 ---
 
 ## License
 
-MIT License. See [LICENSE](file:///home/willi/Projects/KcLauncher/LICENSE) for details. Keychron Launcher web interface and trademarks are the property of Keychron.
+MIT License. See [LICENSE](LICENSE) for details. Keychron Launcher web interface and trademarks are the property of Keychron.

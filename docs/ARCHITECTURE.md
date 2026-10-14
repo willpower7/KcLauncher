@@ -90,5 +90,5 @@ To maintain system security:
 
 When starting without network connectivity:
 - The `did-fail-load` event catches connection errors to `launcher.keychron.com`.
-- Rather than rendering a standard Chromium connection error page, it redirects to the bundled [offline.html](file:///home/willi/Projects/KcLauncher/src/renderer/offline.html).
+- Rather than rendering a standard Chromium connection error page, it redirects to the bundled [offline.html](../src/renderer/offline.html).
 - The user is presented with a retry button and diagnostic information regarding physical cable connection and Linux `udev` permissions.
