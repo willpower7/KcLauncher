@@ -1,7 +1,10 @@
-# Keychron Keyboard & Mouse WebHID / Raw HID access rules
-# Vendor ID 0x3434 (Keychron / Lemokey)
+# Vendor ID 0x3434 (Keychron / Lemokey keyboards and mice)
 KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="3434", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
+
+# Vendor ID 0x34b7 (XinJi / Keychron wireless mice & 4K/8K receivers)
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="34b7", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="34b7", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
 
 # STM32 DFU Bootloader (Used for Keychron firmware flashing / factory resets)
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", MODE="0660", TAG+="uaccess", TAG+="udev-acl"

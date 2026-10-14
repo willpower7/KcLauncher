@@ -10,10 +10,14 @@ module.exports = {
   
   // Keychron Hardware USB Vendor IDs
   VENDOR_IDS: {
-    KEYCHRON: 0x3434, // 13364 decimal
-    STM32_DFU: 0x0483, // Bootloader for flashing
-    RP2040_BOOTLOADER: 0x2e8a
+    KEYCHRON: 0x3434, // 13364 decimal (Keyboards, standard mice, Lemokey)
+    KEYCHRON_WIRELESS: 0x34b7, // 13495 decimal (XinJi / Keychron wireless mice & 4K/8K receivers)
+    STM32_DFU: 0x0483, // Bootloader for flashing (0483:df11)
+    RP2040_BOOTLOADER: 0x2e8a // RP2040 Bootloader for flashing (2e8a:0003)
   },
+
+  ALL_KEYCHRON_VENDORS: [0x3434, 0x34b7],
+  ALL_BOOTLOADER_VENDORS: [0x0483, 0x2e8a, 0x34b7],
 
   // Allowed web origin patterns for WebHID and navigation security
   ALLOWED_HOST_PATTERNS: [

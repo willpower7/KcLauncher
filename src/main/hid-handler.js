@@ -31,6 +31,23 @@ function logDebug(tag, payload) {
   console.log(`[KcLauncher:${tag}]`, payload ? JSON.stringify(payload) : "");
 }
 
+function deviceMatchesFilter(device, filters) {
+  if (!filters || filters.length === 0) return true;
+  return filters.some((filter) => {
+    if (filter.vendorId && filter.vendorId !== device.vendorId) return false;
+    if (filter.productId && filter.productId !== device.productId) return false;
+    if (filter.usagePage !== undefined || filter.usage !== undefined) {
+      const collections = device.collections || [];
+      return collections.some((c) => {
+        const pageMatch = filter.usagePage === undefined || c.usagePage === filter.usagePage;
+        const usageMatch = filter.usage === undefined || c.usage === filter.usage;
+        return pageMatch && usageMatch;
+      });
+    }
+    return true;
+  });
+}
+
 function setupHidAndUsbPermissions(appSession, mainWindow) {
   // 1. Permission Check Handler for HID and USB
   appSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
@@ -73,6 +90,7 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
     const deviceList = (details && details.deviceList) || [];
     logDebug("select-hid-device:candidates", {
       count: deviceList.length,
+      filters: details.filters,
       devices: deviceList.map((d) => ({
         name: d.name,
         vendorId: d.vendorId,
@@ -82,7 +100,7 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
     });
 
     if (details.frame && !isAllowedOrigin(details.frame.url)) {
-      logDebug("select-hid-device:blocked", details.frame.url);
+      logDebug("select-hid-device:blockedOrigin", details.frame.url);
       callback("");
       return;
     }
@@ -107,30 +125,64 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
       return;
     }
 
-    // Prioritize Keychron devices (Vendor ID 0x3434 / 13364)
-    const keychronDevice = deviceList.find(
-      (device) => device.vendorId === config.VENDOR_IDS.KEYCHRON
+    // 1. Filter candidates matching active WebHID filter (e.g. keyboard vs mouse usagePage)
+    const filterMatched = deviceList.filter((d) => deviceMatchesFilter(d, details.filters));
+    const candidatePool = filterMatched.length > 0 ? filterMatched : deviceList;
+
+    // 2. Identify all Keychron / Lemokey / XinJi devices
+    const keychronDevices = candidatePool.filter((d) =>
+      config.ALL_KEYCHRON_VENDORS.includes(d.vendorId)
     );
 
-    if (keychronDevice) {
-      logDebug("select-hid-device:selectedKeychron", {
-        name: keychronDevice.name,
-        vendorId: keychronDevice.vendorId,
-        productId: keychronDevice.productId
+    // If exactly one Keychron device matches, auto-connect it immediately
+    if (keychronDevices.length === 1) {
+      logDebug("select-hid-device:autoSingleKeychron", keychronDevices[0]);
+      callback(keychronDevices[0].deviceId);
+      return;
+    }
+
+    // If multiple Keychron devices are connected, show a native device selection dialog
+    if (keychronDevices.length > 1 && mainWindow && !mainWindow.isDestroyed()) {
+      const buttons = keychronDevices.map((d, idx) => {
+        const hexPid = d.productId ? ` [0x${d.productId.toString(16).padStart(4, "0")}]` : "";
+        return `${d.name || "Keychron Device"}${hexPid}`;
       });
-      callback(keychronDevice.deviceId);
+      buttons.push("Cancel");
+
+      dialog
+        .showMessageBox(mainWindow, {
+          type: "question",
+          title: "Select Keychron Device",
+          message: "Multiple Keychron devices were detected:",
+          detail: "Please choose which device you want to connect to Keychron Launcher:",
+          buttons: buttons,
+          defaultId: 0,
+          cancelId: buttons.length - 1
+        })
+        .then((result) => {
+          if (result.response < keychronDevices.length) {
+            logDebug("select-hid-device:userPicked", keychronDevices[result.response]);
+            callback(keychronDevices[result.response].deviceId);
+          } else {
+            callback("");
+          }
+        })
+        .catch(() => {
+          callback(keychronDevices[0].deviceId);
+        });
       return;
     }
 
-    // Fallback: If only one HID device candidate is present, select it
-    if (deviceList.length === 1) {
-      logDebug("select-hid-device:singleCandidate", deviceList[0]);
-      callback(deviceList[0].deviceId);
+    // Fallback: Single candidate in pool
+    if (candidatePool.length === 1) {
+      logDebug("select-hid-device:singleCandidate", candidatePool[0]);
+      callback(candidatePool[0].deviceId);
       return;
     }
 
-    // Default to first device if multiple non-Keychron devices found
-    callback(deviceList[0].deviceId);
+    // Default to first candidate
+    logDebug("select-hid-device:fallbackFirst", candidatePool[0]);
+    callback(candidatePool[0].deviceId);
   });
 
   // 4. WebUSB Device Picker Selection Handler (DFU / Firmware flashing)
@@ -157,12 +209,11 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
       return;
     }
 
-    // Prefer Keychron or STM32 / RP2040 bootloader
+    // Prefer Keychron devices or bootloaders (STM32 DFU, RP2040, XinJi)
     const matched = deviceList.find(
       (d) =>
-        d.vendorId === config.VENDOR_IDS.KEYCHRON ||
-        d.vendorId === config.VENDOR_IDS.STM32_DFU ||
-        d.vendorId === config.VENDOR_IDS.RP2040_BOOTLOADER
+        config.ALL_KEYCHRON_VENDORS.includes(d.vendorId) ||
+        config.ALL_BOOTLOADER_VENDORS.includes(d.vendorId)
     );
 
     if (matched) {
