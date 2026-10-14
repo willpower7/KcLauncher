@@ -5,6 +5,13 @@ set -e
 # Reloads udev rules so Keychron USB/WebHID devices are accessible without reboot
 
 if [ "$1" = "configure" ]; then
+    # Install udev rule to system directory
+    if [ -f "/opt/Keychron Launcher/lib/udev/rules.d/60-keychron.rules" ]; then
+        mkdir -p /lib/udev/rules.d
+        cp "/opt/Keychron Launcher/lib/udev/rules.d/60-keychron.rules" /lib/udev/rules.d/60-keychron.rules
+        chmod 644 /lib/udev/rules.d/60-keychron.rules
+    fi
+
     # Reload udev daemon if running
     if [ -x /bin/udevadm ] || [ -x /usr/bin/udevadm ]; then
         udevadm control --reload-rules || true
