@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/tmp/
+*.deb
+*.AppImage
+
+# Electron & Cache
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Window state & local test configs
+kclauncher-window-state.json
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db

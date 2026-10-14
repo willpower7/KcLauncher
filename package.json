@@ -1,0 +1,41 @@
+{
+  "name": "kclauncher",
+  "version": "1.0.0",
+  "description": "Native Linux desktop application port of Keychron Launcher with WebHID support and automated udev configuration",
+  "main": "src/main/index.js",
+  "type": "commonjs",
+  "author": "William Johnson <willpower7>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/willpower7/KcLauncher.git"
+  },
+  "keywords": [
+    "keychron",
+    "launcher",
+    "webhid",
+    "linux",
+    "debian",
+    "deb",
+    "qmk",
+    "via",
+    "keyboard",
+    "mouse"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "dev": "KEYCHRON_DEBUG=1 KEYCHRON_DEVTOOLS=1 electron .",
+    "build:deb": "electron-builder --linux deb --config build/electron-builder.yml",
+    "build:appimage": "electron-builder --linux AppImage --config build/electron-builder.yml",
+    "build:all": "electron-builder --linux deb AppImage --config build/electron-builder.yml",
+    "pack": "electron-builder --dir --config build/electron-builder.yml",
+    "install:udev": "bash scripts/install-udev.sh"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  }
+}

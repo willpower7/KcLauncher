@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keychron Launcher - Offline</title>
+  <link rel="stylesheet" href="offline.css">
+</head>
+<body>
+  <div class="card">
+    <div class="icon-container">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ff5722" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+
+    <h1>Offline or Server Unreachable</h1>
+    <p class="subtitle">
+      KcLauncher could not establish a connection to <code>launcher.keychron.com</code>.
+    </p>
+
+    <div class="checklist">
+      <h3>Troubleshooting Steps:</h3>
+      <ul>
+        <li><strong>Network Connection:</strong> Verify that your Linux system is connected to the internet.</li>
+        <li><strong>Hardware Mode:</strong> Ensure your Keychron keyboard switch is set to <strong>Cable</strong> (wired mode).</li>
+        <li><strong>Linux udev Permissions:</strong> Confirm that the <code>60-keychron.rules</code> package has been loaded.</li>
+      </ul>
+    </div>
+
+    <div class="actions">
+      <button id="btnRetry" class="btn primary">Retry Connection</button>
+      <button id="btnDiagnostic" class="btn secondary">View Linux Diagnostics</button>
+    </div>
+
+    <div id="diagnosticsBox" class="diagnostics hidden">
+      <p><strong>Reload udev rules command:</strong></p>
+      <code>sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger</code>
+      <p style="margin-top: 10px;"><strong>Check connected Keychron devices:</strong></p>
+      <code>lsusb | grep -i 3434</code>
+    </div>
+  </div>
+
+  <script src="offline.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2229"/>
+      <stop offset="100%" stop-color="#121519"/>
+    </linearGradient>
+    <linearGradient id="keyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2d323b"/>
+      <stop offset="100%" stop-color="#1f2329"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff5722"/>
+      <stop offset="100%" stop-color="#e64a19"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Base App Tile -->
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="url(#bgGrad)"/>
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.08"/>
+
+  <!-- Keyboard Keycap Graphic with 3D Bevel -->
+  <g filter="url(#shadow)">
+    <!-- Keycap Base / Skirt -->
+    <rect x="96" y="96" width="320" height="320" rx="48" fill="url(#keyGrad)"/>
+    <rect x="96" y="96" width="320" height="320" rx="48" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.12"/>
+
+    <!-- Keycap Top Surface Inset -->
+    <rect x="128" y="128" width="256" height="256" rx="36" fill="#181a1f"/>
+
+    <!-- Accent Corner Indicator (Keychron Esc / Accent Key style) -->
+    <circle cx="348" cy="164" r="14" fill="url(#accentGrad)"/>
+
+    <!-- Keychron 'K' Glyph stylized -->
+    <g transform="translate(160, 160) scale(4.0)" fill="#ffffff">
+      <polygon points="21.06 21.62 21.6 21.17 46.83 0 35.01 0 8.67 22.1 7.6 23 7.6 21.6 7.6 0 0 0 0 47.57 7.6 47.57 7.6 33.22 7.6 32.92 7.83 32.72 14.76 26.91 15.22 26.53 15.64 26.95 36.26 47.57 47.01 47.57 21.56 22.13 21.06 21.62"/>
+    </g>
+  </g>
+</svg>

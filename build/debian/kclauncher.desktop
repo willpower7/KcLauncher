@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Keychron Launcher
+GenericName=Keyboard & Mouse Configurator
+Comment=Configure Keychron keyboards, macros, lighting, and keymaps via WebHID
+Exec=kclauncher %U
+Terminal=false
+Type=Application
+Icon=kclauncher
+StartupWMClass=kclauncher
+Categories=Utility;Settings;HardwareSettings;
+Keywords=Keychron;Keyboard;Mouse;QMK;VIA;WebHID;Launcher;
+MimeType=x-scheme-handler/kclauncher;

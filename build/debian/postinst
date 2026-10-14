@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+# KcLauncher Debian post-installation script
+# Reloads udev rules so Keychron USB/WebHID devices are accessible without reboot
+
+if [ "$1" = "configure" ]; then
+    # Reload udev daemon if running
+    if [ -x /bin/udevadm ] || [ -x /usr/bin/udevadm ]; then
+        udevadm control --reload-rules || true
+        udevadm trigger --subsystem-match=hidraw || true
+        udevadm trigger --subsystem-match=usb || true
+    fi
+
+    # Update desktop database
+    if [ -x /usr/bin/update-desktop-database ]; then
+        update-desktop-database -q /usr/share/applications || true
+    fi
+fi
+
+exit 0

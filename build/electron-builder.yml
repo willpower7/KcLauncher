@@ -1,0 +1,50 @@
+appId: com.willpower7.kclauncher
+productName: Keychron Launcher
+executableName: kclauncher
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - "src/**/*"
+  - "package.json"
+  - "LICENSE"
+  - "README.md"
+
+linux:
+  target:
+    - target: deb
+      arch:
+        - x64
+    - target: AppImage
+      arch:
+        - x64
+  category: Utility
+  synopsis: Native Linux desktop application for Keychron Launcher
+  description: Standalone Linux desktop application providing complete Keychron keyboard and mouse configuration via WebHID without a web browser.
+  icon: src/assets/icons
+  desktop:
+    Name: Keychron Launcher
+    GenericName: Keyboard & Mouse Configurator
+    Comment: Configure Keychron keyboards and mice via WebHID
+    Categories: Utility;Settings;HardwareSettings;
+    StartupWMClass: kclauncher
+  extraFiles:
+    - from: build/udev/60-keychron.rules
+      to: lib/udev/rules.d/60-keychron.rules
+
+deb:
+  packageCategory: utils
+  priority: optional
+  afterInstall: build/debian/postinst
+  afterRemove: build/debian/postrm
+  fpm:
+    - --deb-compression
+    - xz
+  depends:
+    - libnotify4
+    - libsecret-1-0
+    - libnss3
+    - libasound2
+    - udev
