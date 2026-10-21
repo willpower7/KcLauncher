@@ -1,6 +1,7 @@
 "use strict";
 
-const { dialog } = require("electron");
+const path = require("node:path");
+const { dialog, Notification } = require("electron");
 const config = require("./config");
 
 function matchesHostPattern(hostname, pattern) {
@@ -225,13 +226,22 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
     callback(deviceList[0].deviceId);
   });
 
-  // 5. HID Device Attached/Removed Listeners
+  // 5. HID Device Attached/Removed Listeners with Native Desktop Notifications
   appSession.on("hid-device-added", (event, device) => {
     logDebug("hid-device-added", {
       name: device.name,
       vendorId: device.vendorId,
       productId: device.productId
     });
+
+    if (config.ALL_KEYCHRON_VENDORS.includes(device.vendorId) && Notification.isSupported()) {
+      new Notification({
+        title: "Keychron Hardware Connected",
+        body: `${device.name || "Keychron Device"} is plugged in and ready to configure.`,
+        icon: path.join(__dirname, "..", "assets", "icon.png"),
+        silent: true
+      }).show();
+    }
   });
 
   appSession.on("hid-device-removed", (event, device) => {
@@ -240,6 +250,15 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
       vendorId: device.vendorId,
       productId: device.productId
     });
+
+    if (config.ALL_KEYCHRON_VENDORS.includes(device.vendorId) && Notification.isSupported()) {
+      new Notification({
+        title: "Keychron Hardware Disconnected",
+        body: `${device.name || "Keychron Device"} was disconnected.`,
+        icon: path.join(__dirname, "..", "assets", "icon.png"),
+        silent: true
+      }).show();
+    }
   });
 }
 

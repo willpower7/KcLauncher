@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.willpower7.kclauncher</id>
+  <name>Keychron Launcher</name>
+  <summary>Native Linux desktop application for Keychron keyboards and mice</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <developer_name>William Johnson</developer_name>
+  <description>
+    <p>
+      KcLauncher is a native Linux desktop application port of the Keychron Launcher web application.
+      It enables comprehensive configuration of Keychron and Lemokey keyboards and mice—including key remapping,
+      RGB backlighting, rotary encoders, macros, and firmware updates via WebHID—without opening a web browser.
+    </p>
+    <p>Features include:</p>
+    <ul>
+      <li>Automated WebHID hardware pairing for Keychron keyboards, mice, and 4K receivers</li>
+      <li>Automatic Linux udev permissions configuration for zero-friction USB access</li>
+      <li>WebUSB support for STM32 and RP2040 bootloader firmware flashing</li>
+      <li>System tray integration and window state preservation</li>
+      <li>Resilient offline fallback and auto-reconnection diagnostics</li>
+    </ul>
+  </description>
+  <url type="homepage">https://github.com/willpower7/KcLauncher</url>
+  <url type="bugtracker">https://github.com/willpower7/KcLauncher/issues</url>
+  <launchable type="desktop-id">kclauncher.desktop</launchable>
+  <provides>
+    <binary>kclauncher</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+    <category>Settings</category>
+    <category>HardwareSettings</category>
+  </categories>
+  <releases>
+    <release version="1.0.0" date="2026-10-14">
+      <description>
+        <p>Initial release of KcLauncher for Linux with WebHID support and automated udev configuration.</p>
+      </description>
+    </release>
+  </releases>
+</component>

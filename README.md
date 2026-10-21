@@ -23,10 +23,14 @@ Keychron's official configurator is hosted as a web application that relies on C
 ## Key Features
 
 - **No Browser Required**: Runs as a first-class Linux desktop application with system tray, window state memory, and native menu shortcuts.
+- **Wayland & X11 Native**: Automatically configures Chromium Ozone platform flags (`--enable-features=UseOzonePlatform --ozone-platform=wayland`) when running under Wayland sessions.
+- **System Tray & Background Running**: Minimizes to the system notification area, enabling quick toggling and background hardware state monitoring.
+- **Desktop Hardware Notifications**: Emits native Linux desktop notifications when Keychron devices are connected or disconnected.
 - **Automated WebHID Pairing**: Automatically identifies Keychron hardware (`Vendor ID 0x3434`), eliminating manual device picker popups.
 - **Zero-Config Hardware Access**: The Debian package automatically installs `/lib/udev/rules.d/60-keychron.rules` and triggers `udevadm`, granting non-root user access instantly.
 - **Firmware & DFU Support**: Fully permits WebUSB communication with STM32 (`0483:df11`) and RP2040 bootloaders for safe firmware updates.
-- **Offline Fallback Screen**: Gracefully detects offline status and provides diagnostic instructions rather than a blank browser error page.
+- **Resilient Auto-Reconnecting Offline Mode**: Detects offline status, renders a diagnostic screen, and continuously polls network connectivity to automatically restore the configurator without user intervention.
+- **AppStream Metainfo Compliance**: Includes FreeDesktop AppStream metadata (`com.willpower7.kclauncher.metainfo.xml`) for software centers (GNOME Software, Pop!_Shop, KDE Discover).
 - **Secure Sandboxing**: Restricts WebHID access strictly to Keychron's official endpoints and intercepts unapproved external navigation.
 
 ---
@@ -42,29 +46,53 @@ KcLauncher/
 │   └── ROADMAP.md              # Project roadmap & offline caching milestones
 ├── src/                        # Application source code
 │   ├── main/                   # Electron main process
-│   │   ├── index.js            # Main lifecycle & window management
-│   │   ├── hid-handler.js      # WebHID / WebUSB auto-selection & permissions
-│   │   ├── menu.js             # Linux native application menu & shortcuts
+│   │   ├── index.js            # Main lifecycle, CLI flags & window management
+│   │   ├── hid-handler.js      # WebHID / WebUSB auto-selection & desktop notifications
+│   │   ├── menu.js             # Linux native application menu & hardware tools
+│   │   ├── tray.js             # System tray icon, toggling & context menu
 │   │   ├── config.js           # Configuration constants & host allowlists
 │   │   └── preload.js          # Preload context bridge
 │   ├── renderer/               # Renderer assets & offline UI
-│   │   ├── offline.html        # Offline diagnostic screen
+│   │   ├── offline.html        # Offline diagnostic screen with auto-reconnect
 │   │   ├── offline.css         # Styling for offline screen
-│   │   └── offline.js          # Diagnostics script
+│   │   └── offline.js          # Diagnostics & network polling script
 │   └── assets/                 # Icons, logos, and visual assets
 │       ├── icon.svg            # Vector application icon
 │       ├── icons/              # Multi-resolution icons (64x64 to 512x512)
 │       └── keychron-logo.svg   # Official Keychron logo
 ├── build/                      # Build configurations & packaging scripts
 │   ├── electron-builder.yml    # electron-builder Linux deb & AppImage spec
-│   ├── debian/                 # Debian packaging hooks (postinst, postrm, .desktop)
+│   ├── debian/                 # Debian packaging hooks & AppStream metainfo
+│   │   ├── postinst            # Post-installation script (udev & desktop triggers)
+│   │   ├── postrm              # Post-removal cleanup script
+│   │   └── com.willpower7.kclauncher.metainfo.xml # FreeDesktop AppStream metadata
 │   └── udev/                   # 60-keychron.rules installed to /lib/udev/rules.d/
-├── scripts/                    # Automation scripts
+├── scripts/                    # Automation & diagnostic scripts
+│   ├── test-suite.js           # Comprehensive validation test runner (npm test)
+│   ├── verify-udev.sh          # Live hardware & udev diagnostic inspector
 │   ├── setup-dev.sh            # Setup developer dependencies
 │   ├── build-deb.sh            # One-step script to build .deb
 │   └── install-udev.sh         # Standalone udev installer for local dev
 ├── package.json                # Project dependencies & npm scripts
 └── .gitignore
+```
+
+---
+
+## Command Line Options
+
+KcLauncher provides several CLI options for automation, background running, and debugging:
+
+```bash
+kclauncher [options]
+
+Options:
+  -v, --version       Display application version and exit
+  -h, --help          Display help message with usage details
+  -d, --devtools      Open Chromium Developer Tools on startup
+      --offline       Force offline fallback screen for testing
+      --hidden        Start application minimized directly to system tray
+      --no-tray       Disable the system tray icon
 ```
 
 ---
@@ -106,33 +134,51 @@ npm start
 npm run dev
 ```
 
+### Verification & Testing
+
+Run the automated test suite to validate JavaScript syntax, AppStream metainfo, udev rules, and project configuration:
+```bash
+npm test
+```
+
+Inspect active USB hardware, verify kernel hidraw permissions, and ensure the current user has access to Keychron devices:
+```bash
+npm run verify:udev
+```
+
 ---
 
-## Building the `.deb` Package
+## Building Packages (`.deb` and `.AppImage`)
 
-To compile and package KcLauncher into a Debian package (`.deb`):
+KcLauncher packages into both native Debian packages and standalone AppImages:
 
 ```bash
+# Build Debian package (.deb)
 npm run build:deb
+
+# Build standalone AppImage
+npm run build:appimage
+
+# Build both simultaneously
+npm run build:all
 ```
 
-The output package will be generated inside the `dist/` directory:
-```
-dist/Keychron Launcher_1.0.0_amd64.deb
-```
+The output packages will be generated inside the `dist/` directory:
+- Debian: `dist/kclauncher_1.0.0_amd64.deb`
+- AppImage: `dist/Keychron Launcher-1.0.0.AppImage`
 
 ### Installing the `.deb`
 
 Install the package via `apt` or `dpkg`:
 ```bash
-sudo apt install ./dist/Keychron\ Launcher_1.0.0_amd64.deb
+sudo apt install ./dist/kclauncher_1.0.0_amd64.deb
 # or
-sudo dpkg -i ./dist/Keychron\ Launcher_1.0.0_amd64.deb
+sudo dpkg -i ./dist/kclauncher_1.0.0_amd64.deb
 ```
 
 Once installed:
 - KcLauncher is available in your desktop application launcher under **Keychron Launcher**.
-- udev rules are loaded automatically.
+- udev rules and FreeDesktop AppStream metainfo are loaded automatically.
 - Plug your Keychron keyboard in via USB, ensure the toggle switch is in **Cable** mode, and launch!
 
 ---

@@ -12,6 +12,13 @@ if [ "$1" = "configure" ]; then
         chmod 644 /lib/udev/rules.d/60-keychron.rules
     fi
 
+    # Install AppStream metainfo
+    if [ -f "/opt/Keychron Launcher/usr/share/metainfo/com.willpower7.kclauncher.metainfo.xml" ]; then
+        mkdir -p /usr/share/metainfo
+        cp "/opt/Keychron Launcher/usr/share/metainfo/com.willpower7.kclauncher.metainfo.xml" /usr/share/metainfo/com.willpower7.kclauncher.metainfo.xml
+        chmod 644 /usr/share/metainfo/com.willpower7.kclauncher.metainfo.xml
+    fi
+
     # Reload udev daemon if running
     if [ -x /bin/udevadm ] || [ -x /usr/bin/udevadm ]; then
         udevadm control --reload-rules || true

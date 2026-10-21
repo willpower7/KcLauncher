@@ -2,7 +2,7 @@
 
 const { app, Menu, shell, dialog } = require("electron");
 
-function buildAppMenu(mainWindow) {
+function buildAppMenu(mainWindow, onCheckUpdates) {
   const isMac = process.platform === "darwin";
 
   const template = [
@@ -82,6 +82,47 @@ function buildAppMenu(mainWindow) {
       ]
     },
     {
+      label: "&Device",
+      submenu: [
+        {
+          label: "Rescan Hardware Devices",
+          accelerator: "CmdOrCtrl+Shift+D",
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.reload();
+            }
+          }
+        },
+        { type: "separator" },
+        {
+          label: "Linux Hardware Access & Permissions...",
+          click: () => {
+            dialog.showMessageBox(mainWindow, {
+              type: "info",
+              title: "Linux Hardware Access Status",
+              message: "Keychron Hardware Permissions & Drivers",
+              detail:
+                "• USB Vendor IDs: 0x3434 (Keychron/Lemokey), 0x34b7 (XinJi Mice & 4K Receivers)\n" +
+                "• Bootloader IDs: 0x0483:df11 (STM32 DFU), 0x2e8a:0003 (RP2040)\n" +
+                "• udev Rules File: /lib/udev/rules.d/60-keychron.rules\n\n" +
+                "Requirements:\n" +
+                "1. Keyboard switch set to 'Cable' mode (not BT or 2.4GHz)\n" +
+                "2. Direct USB connection to PC\n\n" +
+                "For terminal diagnostics, run:\n" +
+                "  bash scripts/verify-udev.sh",
+              buttons: ["OK"]
+            });
+          }
+        },
+        {
+          label: "Connection Troubleshooting Guide",
+          click: async () => {
+            await shell.openExternal("https://www.keychron.com/pages/keymap");
+          }
+        }
+      ]
+    },
+    {
       label: "&Help",
       submenu: [
         {
@@ -99,25 +140,15 @@ function buildAppMenu(mainWindow) {
           }
         },
         { type: "separator" },
-        {
-          label: "Linux udev Permissions Info",
-          click: () => {
-            dialog.showMessageBox(mainWindow, {
-              type: "info",
-              title: "Linux Hardware Access (udev)",
-              message: "Keychron Hardware Permissions",
-              detail:
-                "KcLauncher uses /lib/udev/rules.d/60-keychron.rules to grant non-root users access to Keychron keyboards.\n\n" +
-                "Vendor ID: 0x3434\n" +
-                "If your device is not connecting:\n" +
-                "1. Make sure the keyboard switch is set to 'Cable' (not BT/2.4GHz)\n" +
-                "2. Try unplugging and re-plugging the USB cable\n" +
-                "3. Run: sudo udevadm control --reload-rules && sudo udevadm trigger",
-              buttons: ["OK"]
-            });
-          }
-        },
-        { type: "separator" },
+        ...(onCheckUpdates
+          ? [
+              {
+                label: "Check for Updates...",
+                click: onCheckUpdates
+              },
+              { type: "separator" }
+            ]
+          : []),
         {
           label: "About KcLauncher",
           click: () => {

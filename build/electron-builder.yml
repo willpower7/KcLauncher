@@ -33,6 +33,13 @@ linux:
   extraFiles:
     - from: build/udev/60-keychron.rules
       to: lib/udev/rules.d/60-keychron.rules
+    - from: build/debian/com.willpower7.kclauncher.metainfo.xml
+      to: usr/share/metainfo/com.willpower7.kclauncher.metainfo.xml
+
+publish:
+  provider: github
+  owner: willpower7
+  repo: KcLauncher
 
 deb:
   packageCategory: utils
