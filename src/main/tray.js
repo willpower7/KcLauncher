@@ -26,6 +26,23 @@ function getTrayIcon() {
   return null;
 }
 
+function getStatusIcon(isEnabled) {
+  const iconPath = path.join(
+    __dirname,
+    "..",
+    "assets",
+    "icons",
+    isEnabled ? "status-enabled.png" : "status-disabled.png"
+  );
+  if (fs.existsSync(iconPath)) {
+    const img = nativeImage.createFromPath(iconPath);
+    if (!img.isEmpty()) {
+      return img.resize({ width: 16, height: 16 });
+    }
+  }
+  return null;
+}
+
 function createTray(mainWindow, onCheckUpdates) {
   if (tray) return tray;
 
@@ -70,11 +87,13 @@ function createTray(mainWindow, onCheckUpdates) {
         },
         { type: "separator" },
         {
-          label: "Run in Background on Close",
+          label: `Run in Background on Close (${runInBackground ? "Enabled" : "Disabled"})`,
+          icon: getStatusIcon(runInBackground),
           type: "checkbox",
           checked: runInBackground,
           click: (menuItem) => {
-            runInBackground = menuItem.checked;
+            runInBackground = menuItem.checked !== undefined ? menuItem.checked : !runInBackground;
+            updateContextMenu();
           }
         },
         ...(onCheckUpdates

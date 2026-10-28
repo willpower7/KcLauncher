@@ -59,6 +59,8 @@ const requiredFiles = [
   "src/assets/icons/128x128.png",
   "src/assets/icons/256x256.png",
   "src/assets/icons/512x512.png",
+  "src/assets/icons/status-enabled.png",
+  "src/assets/icons/status-disabled.png",
   "src/renderer/offline.html",
   "src/renderer/offline.css"
 ];

@@ -36,6 +36,11 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="1.0.1" date="2026-10-27">
+      <description>
+        <p>Add status indicator icon to tray menu and fix background lifecycle behavior.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-10-14">
       <description>
         <p>Initial release of KcLauncher for Linux with WebHID support and automated udev configuration.</p>

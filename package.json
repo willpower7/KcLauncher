@@ -1,6 +1,6 @@
 {
   "name": "kclauncher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Native Linux desktop application port of Keychron Launcher with WebHID support and automated udev configuration",
   "main": "src/main/index.js",
   "type": "commonjs",
