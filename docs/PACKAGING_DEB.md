@@ -87,12 +87,12 @@ ls -lh dist/*.deb
 
 Inspect the files contained in the package:
 ```bash
-dpkg-deb -c dist/Keychron\ Launcher_1.0.0_amd64.deb
+dpkg-deb -c dist/kclauncher_1.0.0_amd64.deb
 ```
 
 Inspect package metadata:
 ```bash
-dpkg-deb -I dist/Keychron\ Launcher_1.0.0_amd64.deb
+dpkg-deb -I dist/kclauncher_1.0.0_amd64.deb
 ```
 
 ---
@@ -101,7 +101,7 @@ dpkg-deb -I dist/Keychron\ Launcher_1.0.0_amd64.deb
 
 Install the generated `.deb` on your system:
 ```bash
-sudo apt install ./dist/Keychron\ Launcher_1.0.0_amd64.deb
+sudo apt install ./dist/kclauncher_1.0.0_amd64.deb
 ```
 
 Verify that udev rules were installed and reloaded:

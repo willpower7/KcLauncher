@@ -31,10 +31,17 @@ function checkConnectivity() {
     });
 }
 
-// Auto-poll connection every 4 seconds
-const intervalId = setInterval(checkConnectivity, 4000);
-// Also listen for browser online event
-window.addEventListener("online", checkConnectivity);
+// Auto-poll connection every 4 seconds unless forced offline mode is active
+const isForcedOffline = window.location.search.includes("forced=1");
+
+if (isForcedOffline) {
+  if (statusText) {
+    statusText.textContent = "Offline test mode active (--offline)";
+  }
+} else {
+  setInterval(checkConnectivity, 4000);
+  window.addEventListener("online", checkConnectivity);
+}
 
 document.getElementById("btnRetry").addEventListener("click", () => {
   if (statusText) statusText.textContent = "Connecting...";

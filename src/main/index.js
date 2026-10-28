@@ -2,10 +2,10 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, BrowserWindow, shell, session, dialog } = require("electron");
+const { app, BrowserWindow, shell, session, dialog, screen } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const config = require("./config");
-const { isAllowedOrigin, setupHidAndUsbPermissions } = require("./hid-handler");
+const { isAllowedOrigin, isLauncherOrigin, setupHidAndUsbPermissions } = require("./hid-handler");
 const { buildAppMenu } = require("./menu");
 const { createTray, shouldRunInBackground, destroyTray } = require("./tray");
 
@@ -67,6 +67,7 @@ if (!gotSingleInstanceLock) {
 }
 
 let mainWindow = null;
+let isQuitting = false;
 
 function getWindowStateFilePath() {
   return path.join(app.getPath("userData"), config.WINDOW.STATE_FILE);
@@ -112,17 +113,51 @@ function initAutoUpdater() {
   if (!app.isPackaged) return;
 
   try {
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
+    const isAppImage = Boolean(process.env.APPIMAGE);
 
-    autoUpdater.on("update-available", (info) => {
-      dialog.showMessageBox({
-        type: "info",
-        title: "Update Available",
-        message: `KcLauncher v${info.version} is available.`,
-        detail: "The update is downloading in the background and will install when you restart the app."
+    if (isAppImage) {
+      autoUpdater.autoDownload = true;
+      autoUpdater.autoInstallOnAppQuit = true;
+
+      autoUpdater.on("update-available", (info) => {
+        dialog.showMessageBox({
+          type: "info",
+          title: "Update Available",
+          message: `KcLauncher v${info.version} is available.`,
+          detail: "The update is downloading in the background and will install when you restart the app."
+        });
       });
-    });
+
+      autoUpdater.on("update-downloaded", (info) => {
+        dialog.showMessageBox({
+          type: "info",
+          title: "Update Downloaded",
+          message: `KcLauncher v${info.version} is ready to install.`,
+          detail: "The update will be installed automatically when you exit the application."
+        });
+      });
+    } else {
+      // Debian / system package installations cannot be written to /opt by unprivileged processes
+      autoUpdater.autoDownload = false;
+      autoUpdater.autoInstallOnAppQuit = false;
+
+      autoUpdater.on("update-available", (info) => {
+        dialog
+          .showMessageBox({
+            type: "info",
+            title: "Update Available",
+            message: `KcLauncher v${info.version} is available.`,
+            detail: "A new Debian package is available on GitHub Releases.",
+            buttons: ["View on GitHub", "Later"],
+            defaultId: 0
+          })
+          .then(({ response }) => {
+            if (response === 0) {
+              shell.openExternal("https://github.com/willpower7/KcLauncher/releases");
+            }
+          });
+      });
+    }
 
     autoUpdater.checkForUpdates().catch((err) => {
       if (config.DEBUG) console.warn("[KcLauncher:Updater] Update check failed:", err.message);
@@ -143,6 +178,8 @@ function manualCheckForUpdates() {
     return;
   }
 
+  const isAppImage = Boolean(process.env.APPIMAGE);
+
   autoUpdater
     .checkForUpdates()
     .then((result) => {
@@ -153,6 +190,21 @@ function manualCheckForUpdates() {
           message: "You're up to date!",
           detail: `KcLauncher v${app.getVersion()} is currently the newest version.`
         });
+      } else if (!isAppImage) {
+        dialog
+          .showMessageBox(mainWindow, {
+            type: "info",
+            title: "Update Available",
+            message: `KcLauncher v${result.updateInfo.version} is available.`,
+            detail: "A new version of KcLauncher is available on GitHub Releases.",
+            buttons: ["View on GitHub", "Later"],
+            defaultId: 0
+          })
+          .then(({ response }) => {
+            if (response === 0) {
+              shell.openExternal("https://github.com/willpower7/KcLauncher/releases");
+            }
+          });
       }
     })
     .catch((err) => {
@@ -167,6 +219,24 @@ function manualCheckForUpdates() {
 
 function createMainWindow() {
   const windowState = loadWindowState();
+
+  // Validate saved coordinates against active display bounds
+  if (typeof windowState.x === "number" && typeof windowState.y === "number") {
+    const displays = screen.getAllDisplays();
+    const isVisible = displays.some((display) => {
+      const { x, y, width, height } = display.bounds;
+      return (
+        windowState.x >= x &&
+        windowState.x < x + width &&
+        windowState.y >= y &&
+        windowState.y < y + height
+      );
+    });
+    if (!isVisible) {
+      delete windowState.x;
+      delete windowState.y;
+    }
+  }
 
   mainWindow = new BrowserWindow({
     title: config.APP_TITLE,
@@ -204,7 +274,7 @@ function createMainWindow() {
 
   // Load URL or local offline fallback
   const targetUrl = config.OFFLINE_MODE
-    ? `file://${config.FALLBACK_OFFLINE_URL}`
+    ? `file://${config.FALLBACK_OFFLINE_URL}?forced=1`
     : config.LAUNCHER_URL;
 
   mainWindow.loadURL(targetUrl);
@@ -232,7 +302,7 @@ function createMainWindow() {
 
   // Handle external links (open in user's default browser)
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isAllowedOrigin(url)) {
+    if (isLauncherOrigin(url)) {
       mainWindow.loadURL(url);
     } else {
       shell.openExternal(url);
@@ -242,7 +312,7 @@ function createMainWindow() {
 
   // Navigation guard
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (!isAllowedOrigin(url) && !url.startsWith("file://")) {
+    if (!isLauncherOrigin(url) && !url.startsWith("file://")) {
       event.preventDefault();
       shell.openExternal(url);
     }
@@ -252,7 +322,7 @@ function createMainWindow() {
   mainWindow.on("close", (event) => {
     saveWindowState(mainWindow);
 
-    if (shouldRunInBackground()) {
+    if (!isQuitting && shouldRunInBackground()) {
       event.preventDefault();
       mainWindow.hide();
     }
@@ -285,6 +355,7 @@ app.whenReady().then(() => {
 });
 
 app.on("before-quit", () => {
+  isQuitting = true;
   destroyTray();
 });
 

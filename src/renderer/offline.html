@@ -48,7 +48,7 @@
       <p><strong>Reload udev rules command:</strong></p>
       <code>sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger</code>
       <p style="margin-top: 10px;"><strong>Check connected Keychron devices:</strong></p>
-      <code>lsusb | grep -i 3434</code>
+      <code>lsusb | grep -i -E "3434|34b7|0483|2e8a"</code>
     </div>
   </div>
 

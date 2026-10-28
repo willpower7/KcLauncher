@@ -33,5 +33,5 @@ This roadmap tracks the development milestones for **KcLauncher** from the initi
 
 ## Phase 4: CI/CD & Automated GitHub Releases
 
-- [ ] **GitHub Actions Workflow**: Automatically build `.deb` and `.AppImage` binaries on tag pushes (`v1.0.0`, etc.).
+- [x] **GitHub Actions Workflow**: Automatically build `.deb` and `.AppImage` binaries on tag pushes (`v1.0.0`, etc.).
 - [ ] **APT Repository Hosting**: Host a GitHub Pages APT repository allowing users to install and update via `apt update && apt install kclauncher`.

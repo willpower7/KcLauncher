@@ -17,15 +17,19 @@ module.exports = {
   },
 
   ALL_KEYCHRON_VENDORS: [0x3434, 0x34b7],
-  ALL_BOOTLOADER_VENDORS: [0x0483, 0x2e8a, 0x34b7],
+  ALL_BOOTLOADER_VENDORS: [0x0483, 0x2e8a],
+
+  // Dedicated launcher web endpoints
+  LAUNCHER_HOSTS: [
+    "launcher.keychron.com",
+    "launcher.keychron.cn"
+  ],
 
   // Allowed web origin patterns for WebHID and navigation security
   ALLOWED_HOST_PATTERNS: [
     "launcher.keychron.com",
-    "keychron.com",
-    "www.keychron.com",
-    "*.keychron.com",
     "launcher.keychron.cn",
+    "*.keychron.com",
     "*.keychron.cn"
   ],
 

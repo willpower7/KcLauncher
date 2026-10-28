@@ -18,7 +18,8 @@ function getTrayIcon() {
     if (fs.existsSync(iconPath)) {
       const img = nativeImage.createFromPath(iconPath);
       if (!img.isEmpty()) {
-        return img.resize({ width: 22, height: 22 });
+        const targetSize = process.platform === "darwin" ? 22 : 32;
+        return img.resize({ width: targetSize, height: targetSize });
       }
     }
   }

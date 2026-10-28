@@ -20,7 +20,7 @@ echo ""
 echo -e "${BLUE}[1/4] Checking udev rules...${NC}"
 FOUND_RULE=false
 
-if [ -f "/lib/udev/rules.d/60-keychron.rules" ]; then
+if [ -f "/lib/udev/rules.d/60-keychron.rules" ] || [ -f "/usr/lib/udev/rules.d/60-keychron.rules" ]; then
     echo -e "  ${GREEN}✓ Found /lib/udev/rules.d/60-keychron.rules (Installed via package)${NC}"
     FOUND_RULE=true
 fi

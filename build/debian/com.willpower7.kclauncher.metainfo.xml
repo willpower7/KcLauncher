@@ -5,7 +5,9 @@
   <summary>Native Linux desktop application for Keychron keyboards and mice</summary>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
-  <developer_name>William Johnson</developer_name>
+  <developer id="com.willpower7">
+    <name>William Johnson</name>
+  </developer>
   <description>
     <p>
       KcLauncher is a native Linux desktop application port of the Keychron Launcher web application.
@@ -32,6 +34,7 @@
     <category>Settings</category>
     <category>HardwareSettings</category>
   </categories>
+  <content_rating type="oars-1.1" />
   <releases>
     <release version="1.0.0" date="2026-10-14">
       <description>

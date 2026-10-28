@@ -35,7 +35,7 @@ flowchart TD
     end
 
     HIDRAW -->|Granted Access| HID
-    HID -->|Auto-Pairs Vendor 0x3434| WEB
+    HID -->|Auto-Pairs Vendor 0x3434 / 0x34b7| WEB
 ```
 
 ---
@@ -65,7 +65,7 @@ In KcLauncher:
 1. **Permission Check**: `appSession.setPermissionCheckHandler` intercepts requests for `'hid'` and `'usb'`. It validates that the requesting domain is in the `ALLOWED_HOST_PATTERNS` allowlist.
 2. **Device Discovery**: Electron triggers `select-hid-device` with candidate HID devices enumerated by the OS.
 3. **Auto-Selection**:
-   - KcLauncher inspects all devices for `vendorId === 0x3434` (Keychron).
+   - KcLauncher inspects all devices for `vendorId === 0x3434` (Keychron) or `0x34b7` (XinJi / wireless receivers).
    - If a Keychron device is found, it is automatically passed back to the callback (`callback(keychronDevice.deviceId)`).
    - The user experiences a frictionless connection without manual popups.
 4. **DFU Flashing**: For firmware flashing or bootloader recovery, `select-usb-device` similarly handles STM32 (`0x0483:0xdf11`) and RP2040 (`0x2e8a:0x0003`) bootloader devices.

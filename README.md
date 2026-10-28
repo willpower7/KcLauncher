@@ -23,10 +23,10 @@ Keychron's official configurator is hosted as a web application that relies on C
 ## Key Features
 
 - **No Browser Required**: Runs as a first-class Linux desktop application with system tray, window state memory, and native menu shortcuts.
-- **Wayland & X11 Native**: Automatically configures Chromium Ozone platform flags (`--enable-features=UseOzonePlatform --ozone-platform=wayland`) when running under Wayland sessions.
+- **Wayland & X11 Native**: Automatically configures Chromium Ozone platform flags (`ozone-platform-hint=auto` with `WaylandWindowDecorations`) when running under Wayland sessions.
 - **System Tray & Background Running**: Minimizes to the system notification area, enabling quick toggling and background hardware state monitoring.
 - **Desktop Hardware Notifications**: Emits native Linux desktop notifications when Keychron devices are connected or disconnected.
-- **Automated WebHID Pairing**: Automatically identifies Keychron hardware (`Vendor ID 0x3434`), eliminating manual device picker popups.
+- **Automated WebHID Pairing**: Automatically identifies Keychron hardware (`Vendor ID 0x3434` and `0x34b7`), eliminating manual device picker popups.
 - **Zero-Config Hardware Access**: The Debian package automatically installs `/lib/udev/rules.d/60-keychron.rules` and triggers `udevadm`, granting non-root user access instantly.
 - **Firmware & DFU Support**: Fully permits WebUSB communication with STM32 (`0483:df11`) and RP2040 bootloaders for safe firmware updates.
 - **Resilient Auto-Reconnecting Offline Mode**: Detects offline status, renders a diagnostic screen, and continuously polls network connectivity to automatically restore the configurator without user intervention.
@@ -89,7 +89,8 @@ kclauncher [options]
 Options:
   -v, --version       Display application version and exit
   -h, --help          Display help message with usage details
-  -d, --devtools      Open Chromium Developer Tools on startup
+  -d, --debug         Enable verbose debug logging
+      --devtools      Open Chromium Developer Tools on launch
       --offline       Force offline fallback screen for testing
       --hidden        Start application minimized directly to system tray
       --no-tray       Disable the system tray icon

@@ -26,9 +26,9 @@
     "start": "electron .",
     "dev": "KEYCHRON_DEBUG=1 KEYCHRON_DEVTOOLS=1 electron .",
     "test": "node scripts/test-suite.js",
-    "build:deb": "electron-builder --linux deb --config build/electron-builder.yml",
-    "build:appimage": "electron-builder --linux AppImage --config build/electron-builder.yml",
-    "build:all": "electron-builder --linux deb AppImage --config build/electron-builder.yml",
+    "build:deb": "electron-builder --linux deb --config build/electron-builder.yml --publish never",
+    "build:appimage": "electron-builder --linux AppImage --config build/electron-builder.yml --publish never",
+    "build:all": "electron-builder --linux deb AppImage --config build/electron-builder.yml --publish never",
     "pack": "electron-builder --dir --config build/electron-builder.yml",
     "install:udev": "bash scripts/install-udev.sh",
     "verify:udev": "bash scripts/verify-udev.sh"

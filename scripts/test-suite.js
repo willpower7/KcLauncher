@@ -20,7 +20,7 @@ function assert(condition, message) {
 console.log("=== KcLauncher Test Suite ===");
 
 // 1. Check JavaScript Syntax
-console.log("\n[1/5] Validating JavaScript syntax...");
+console.log("\n[1/6] Validating JavaScript syntax...");
 const jsFiles = [
   "src/main/index.js",
   "src/main/hid-handler.js",
@@ -42,7 +42,7 @@ for (const file of jsFiles) {
 }
 
 // 2. Check Required Files & Assets
-console.log("\n[2/5] Checking required project files and assets...");
+console.log("\n[2/6] Checking required project files and assets...");
 const requiredFiles = [
   "package.json",
   "LICENSE",
@@ -69,7 +69,7 @@ for (const file of requiredFiles) {
 }
 
 // 3. Check udev Rules Content
-console.log("\n[3/5] Verifying udev rules format and vendor IDs...");
+console.log("\n[3/6] Verifying udev rules format and vendor IDs...");
 const udevContent = fs.readFileSync(path.join(ROOT, "build/udev/60-keychron.rules"), "utf-8");
 assert(udevContent.includes("3434"), "Rules match Keychron VID 0x3434");
 assert(udevContent.includes("34b7"), "Rules match XinJi/Mice VID 0x34b7");
@@ -78,7 +78,7 @@ assert(udevContent.includes("2e8a"), "Rules match RP2040 DFU 0x2e8a");
 assert(udevContent.includes('TAG+="uaccess"'), "Rules contain systemd uaccess tag");
 
 // 4. Privacy & Path Hygiene Check
-console.log("\n[4/5] Checking for hardcoded user paths in source and docs...");
+console.log("\n[4/6] Checking for hardcoded user paths in source and docs...");
 const checkDirs = ["src", "build", "docs", "scripts"];
 let foundHardcodedPaths = false;
 
@@ -106,12 +106,50 @@ for (const d of checkDirs) {
 assert(!foundHardcodedPaths, "Zero hardcoded personal paths found");
 
 // 5. Package.json Integrity
-console.log("\n[5/5] Checking package.json metadata...");
+console.log("\n[5/6] Checking package.json metadata...");
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"));
 assert(pkg.name === "kclauncher", "Package name is kclauncher");
 assert(Boolean(pkg.version), `Package version defined (${pkg.version})`);
 assert(pkg.license === "MIT", "License is MIT");
 assert(pkg.main === "src/main/index.js", "Entry point is src/main/index.js");
+
+// 6. Unit Testing Logic Handlers
+console.log("\n[6/6] Unit testing hid-handler logic...");
+const {
+  matchesHostPattern,
+  isAllowedOrigin,
+  isLauncherOrigin,
+  deviceMatchesFilter
+} = require("../src/main/hid-handler");
+
+// Host pattern matching
+assert(matchesHostPattern("launcher.keychron.com", "*.keychron.com"), "matchesHostPattern matches subdomain");
+assert(matchesHostPattern("keychron.com", "*.keychron.com"), "matchesHostPattern matches bare domain");
+assert(!matchesHostPattern("evilkeychron.com", "*.keychron.com"), "matchesHostPattern rejects non-subdomain prefix");
+assert(!matchesHostPattern("google.com", "*.keychron.com"), "matchesHostPattern rejects foreign domain");
+
+// Origin checks
+assert(isAllowedOrigin("https://launcher.keychron.com"), "isAllowedOrigin permits https launcher");
+assert(isAllowedOrigin("https://www.keychron.com/pages/keymap"), "isAllowedOrigin permits https keychron store page");
+assert(isAllowedOrigin("file:///opt/Keychron/offline.html"), "isAllowedOrigin permits local file://");
+assert(!isAllowedOrigin("http://launcher.keychron.com"), "isAllowedOrigin rejects insecure http");
+assert(!isAllowedOrigin("https://attacker.com"), "isAllowedOrigin rejects unknown domain");
+
+// Dedicated launcher endpoint checks
+assert(isLauncherOrigin("https://launcher.keychron.com"), "isLauncherOrigin permits launcher.keychron.com");
+assert(isLauncherOrigin("https://launcher.keychron.cn"), "isLauncherOrigin permits launcher.keychron.cn");
+assert(!isLauncherOrigin("https://www.keychron.com/products/k2"), "isLauncherOrigin rejects store page");
+
+// Device filter matching
+const testKeyboard = { vendorId: 0x3434, productId: 0x0240, name: "Keychron Q1" };
+const testMouse = { vendorId: 0x34b7, productId: 0x0001, name: "Keychron M3" };
+const otherDevice = { vendorId: 0x1234, productId: 0x5678, name: "Other" };
+
+assert(deviceMatchesFilter(testKeyboard, []), "deviceMatchesFilter allows empty filter");
+assert(deviceMatchesFilter(testKeyboard, [{ vendorId: 0x3434 }]), "deviceMatchesFilter matches vendorId");
+assert(!deviceMatchesFilter(testKeyboard, [{ vendorId: 0x34b7 }]), "deviceMatchesFilter rejects mismatched vendorId");
+assert(deviceMatchesFilter(testKeyboard, [{ vendorId: 0x3434, usagePage: 0xff60, usage: 0x61 }]), "deviceMatchesFilter gracefully handles missing collections");
+assert(!deviceMatchesFilter(otherDevice, [{ vendorId: 0x3434 }]), "deviceMatchesFilter rejects non-Keychron device");
 
 console.log("\n=============================");
 if (failures === 0) {

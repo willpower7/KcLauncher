@@ -5,7 +5,7 @@ set -e
 
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
     # Remove system udev rule, symlink, and metainfo
-    rm -f /lib/udev/rules.d/60-keychron.rules /etc/udev/rules.d/60-keychron.rules
+    rm -f /lib/udev/rules.d/60-keychron.rules
     rm -f /usr/bin/kclauncher
     rm -f /usr/share/metainfo/com.willpower7.kclauncher.metainfo.xml
 

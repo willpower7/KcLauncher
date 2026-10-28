@@ -27,6 +27,18 @@ function isAllowedOrigin(rawUrl) {
   }
 }
 
+function isLauncherOrigin(rawUrl) {
+  if (!rawUrl) return false;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol === "file:") return true;
+    if (parsed.protocol !== "https:") return false;
+    return config.LAUNCHER_HOSTS.includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function logDebug(tag, payload) {
   if (!config.DEBUG) return;
   console.log(`[KcLauncher:${tag}]`, payload ? JSON.stringify(payload) : "");
@@ -37,9 +49,10 @@ function deviceMatchesFilter(device, filters) {
   return filters.some((filter) => {
     if (filter.vendorId && filter.vendorId !== device.vendorId) return false;
     if (filter.productId && filter.productId !== device.productId) return false;
-    if (filter.usagePage !== undefined || filter.usage !== undefined) {
-      const collections = device.collections || [];
-      return collections.some((c) => {
+    // Electron main-process HIDDevice objects do not expose collections.
+    // If collections are present on the device, check usagePage / usage.
+    if (device.collections && Array.isArray(device.collections) && (filter.usagePage !== undefined || filter.usage !== undefined)) {
+      return device.collections.some((c) => {
         const pageMatch = filter.usagePage === undefined || c.usagePage === filter.usagePage;
         const usageMatch = filter.usage === undefined || c.usage === filter.usage;
         return pageMatch && usageMatch;
@@ -102,13 +115,13 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
 
     if (details.frame && !isAllowedOrigin(details.frame.url)) {
       logDebug("select-hid-device:blockedOrigin", details.frame.url);
-      callback("");
+      callback();
       return;
     }
 
     if (deviceList.length === 0) {
       logDebug("select-hid-device:empty");
-      callback("");
+      callback();
 
       if (mainWindow && !mainWindow.isDestroyed()) {
         dialog.showMessageBox(mainWindow, {
@@ -165,11 +178,11 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
             logDebug("select-hid-device:userPicked", keychronDevices[result.response]);
             callback(keychronDevices[result.response].deviceId);
           } else {
-            callback("");
+            callback();
           }
         })
         .catch(() => {
-          callback(keychronDevices[0].deviceId);
+          callback();
         });
       return;
     }
@@ -201,16 +214,16 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
     });
 
     if (details.frame && !isAllowedOrigin(details.frame.url)) {
-      callback("");
+      callback();
       return;
     }
 
     if (deviceList.length === 0) {
-      callback("");
+      callback();
       return;
     }
 
-    // Prefer Keychron devices or bootloaders (STM32 DFU, RP2040, XinJi)
+    // Prefer Keychron devices or bootloaders (STM32 DFU, RP2040)
     const matched = deviceList.find(
       (d) =>
         config.ALL_KEYCHRON_VENDORS.includes(d.vendorId) ||
@@ -227,7 +240,9 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
   });
 
   // 5. HID Device Attached/Removed Listeners with Native Desktop Notifications
-  appSession.on("hid-device-added", (event, device) => {
+  appSession.on("hid-device-added", (event, details) => {
+    const device = (details && details.device) || details;
+    if (!device) return;
     logDebug("hid-device-added", {
       name: device.name,
       vendorId: device.vendorId,
@@ -244,7 +259,9 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
     }
   });
 
-  appSession.on("hid-device-removed", (event, device) => {
+  appSession.on("hid-device-removed", (event, details) => {
+    const device = (details && details.device) || details;
+    if (!device) return;
     logDebug("hid-device-removed", {
       name: device.name,
       vendorId: device.vendorId,
@@ -263,6 +280,9 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
 }
 
 module.exports = {
+  matchesHostPattern,
   isAllowedOrigin,
+  isLauncherOrigin,
+  deviceMatchesFilter,
   setupHidAndUsbPermissions
 };

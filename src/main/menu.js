@@ -1,6 +1,7 @@
 "use strict";
 
 const { app, Menu, shell, dialog } = require("electron");
+const config = require("./config");
 
 function buildAppMenu(mainWindow, onCheckUpdates) {
   const isMac = process.platform === "darwin";
@@ -28,11 +29,20 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
       label: "&File",
       submenu: [
         {
+          label: "Return to Launcher Home",
+          accelerator: "CmdOrCtrl+Home",
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.loadURL(config.LAUNCHER_URL);
+            }
+          }
+        },
+        {
           label: "Reload Launcher",
           accelerator: "CmdOrCtrl+R",
           click: () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.reload();
+              mainWindow.webContents.reload();
             }
           }
         },
@@ -89,7 +99,7 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
           accelerator: "CmdOrCtrl+Shift+D",
           click: () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.reload();
+              mainWindow.webContents.reload();
             }
           }
         },

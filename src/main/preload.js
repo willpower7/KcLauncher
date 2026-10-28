@@ -1,6 +1,6 @@
 "use strict";
 
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge } = require("electron");
 
 // Expose safe system capabilities to renderer if needed
 contextBridge.exposeInMainWorld("kclauncher", {

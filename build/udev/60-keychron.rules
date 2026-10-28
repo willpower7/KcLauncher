@@ -1,13 +1,13 @@
 # Vendor ID 0x3434 (Keychron / Lemokey keyboards and mice)
-KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="3434", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0666", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="3434", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
 
 # Vendor ID 0x34b7 (XinJi / Keychron wireless mice & 4K/8K receivers)
-KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="34b7", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="34b7", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="34b7", MODE="0666", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="34b7", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
 
 # STM32 DFU Bootloader (Used for Keychron firmware flashing / factory resets)
-SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
 
 # Raspberry Pi RP2040 Bootloader (Used for custom QMK Keychron boards)
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
