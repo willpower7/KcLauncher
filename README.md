@@ -58,8 +58,7 @@ KcLauncher/
 │   │   └── offline.js          # Diagnostics & network polling script
 │   └── assets/                 # Icons, logos, and visual assets
 │       ├── icon.svg            # Vector application icon
-│       ├── icons/              # Multi-resolution icons (64x64 to 512x512)
-│       └── keychron-logo.svg   # Official Keychron logo
+│       └── icons/              # Multi-resolution icons (64x64 to 512x512)
 ├── build/                      # Build configurations & packaging scripts
 │   ├── electron-builder.yml    # electron-builder Linux deb & AppImage spec
 │   ├── debian/                 # Debian packaging hooks & AppStream metainfo

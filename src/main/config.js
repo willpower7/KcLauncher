@@ -7,15 +7,10 @@ module.exports = {
   APP_TITLE: "Keychron Launcher",
   LAUNCHER_URL: "https://launcher.keychron.com",
   FALLBACK_OFFLINE_URL: path.join(__dirname, "..", "renderer", "offline.html"),
+  MIRRORED_LOCAL_URL: path.join(__dirname, "..", "renderer", "mirrored", "index.html"),
+  PROFILES_DIR_NAME: "profiles",
   
-  // Keychron Hardware USB Vendor IDs
-  VENDOR_IDS: {
-    KEYCHRON: 0x3434, // 13364 decimal (Keyboards, standard mice, Lemokey)
-    KEYCHRON_WIRELESS: 0x34b7, // 13495 decimal (XinJi / Keychron wireless mice & 4K/8K receivers)
-    STM32_DFU: 0x0483, // Bootloader for flashing (0483:df11)
-    RP2040_BOOTLOADER: 0x2e8a // RP2040 Bootloader for flashing (2e8a:0003)
-  },
-
+  // Supported USB Hardware Vendors & Bootloaders
   ALL_KEYCHRON_VENDORS: [0x3434, 0x34b7],
   ALL_BOOTLOADER_VENDORS: [0x0483, 0x2e8a],
 
@@ -45,5 +40,6 @@ module.exports = {
   // Environment feature flags
   DEBUG: process.env.KEYCHRON_DEBUG === "1",
   DEVTOOLS: process.env.KEYCHRON_DEVTOOLS === "1",
-  OFFLINE_MODE: process.env.KEYCHRON_OFFLINE === "1"
+  OFFLINE_MODE: process.env.KEYCHRON_OFFLINE === "1",
+  USE_LOCAL_MIRROR: process.env.KEYCHRON_LOCAL_MIRROR === "1"
 };

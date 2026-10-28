@@ -2,8 +2,10 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, Tray, Menu, nativeImage } = require("electron");
+const { app, Tray, Menu, nativeImage, shell } = require("electron");
 const config = require("./config");
+const { showDeviceInspectorDialog } = require("./device-inspector");
+const { openProfilesFolder, listProfiles } = require("./profile-manager");
 
 let tray = null;
 let runInBackground = false;
@@ -70,7 +72,7 @@ function createTray(mainWindow, onCheckUpdates) {
         },
         { type: "separator" },
         {
-          label: "Rescan Hardware Devices",
+          label: "Reload Launcher",
           click: () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.webContents.reload();
@@ -78,12 +80,35 @@ function createTray(mainWindow, onCheckUpdates) {
           }
         },
         {
-          label: "Reload Launcher",
+          label: "Device Diagnostics & Inspector...",
           click: () => {
-            if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.webContents.reload();
-            }
+            showDeviceInspectorDialog(mainWindow);
           }
+        },
+        {
+          label: "Profiles",
+          submenu: [
+            {
+              label: "Open Profiles Folder",
+              click: () => {
+                openProfilesFolder();
+              }
+            },
+            { type: "separator" },
+            ...(listProfiles().length > 0
+              ? listProfiles().map((p) => ({
+                  label: p.name,
+                  click: () => {
+                    shell.showItemInFolder(p.fullPath);
+                  }
+                }))
+              : [
+                  {
+                    label: "No saved profiles yet",
+                    enabled: false
+                  }
+                ])
+          ]
         },
         { type: "separator" },
         {

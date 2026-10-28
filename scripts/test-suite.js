@@ -28,6 +28,9 @@ const jsFiles = [
   "src/main/config.js",
   "src/main/tray.js",
   "src/main/preload.js",
+  "src/main/device-inspector.js",
+  "src/main/profile-manager.js",
+  "scripts/mirror-offline-assets.js",
   "src/renderer/offline.js"
 ];
 
@@ -61,6 +64,10 @@ const requiredFiles = [
   "src/assets/icons/512x512.png",
   "src/assets/icons/status-enabled.png",
   "src/assets/icons/status-disabled.png",
+  "src/main/device-inspector.js",
+  "src/main/profile-manager.js",
+  "scripts/mirror-offline-assets.js",
+  "scripts/generate-apt-repo.sh",
   "src/renderer/offline.html",
   "src/renderer/offline.css"
 ];
@@ -91,10 +98,11 @@ function scanDir(dir) {
     if (entry.isDirectory()) {
       scanDir(full);
     } else if (entry.isFile() && !entry.name.endsWith(".png") && !entry.name.endsWith(".ico") && entry.name !== "test-suite.js") {
-      const forbiddenUser = "/home" + "/willi";
-      const forbiddenMac = "/Users" + "/";
+      const currentUser = process.env.USER || process.env.LOGNAME || "willi";
+      const personalPath = `/home/${currentUser}`;
+      const macPath = `/Users/${currentUser}`;
       const content = fs.readFileSync(full, "utf-8");
-      if (content.includes(forbiddenUser) || content.includes(forbiddenMac)) {
+      if (content.includes(personalPath) || content.includes(macPath)) {
         console.error(`  ✗ Found hardcoded path in: ${full}`);
         foundHardcodedPaths = true;
       }
@@ -152,6 +160,13 @@ assert(deviceMatchesFilter(testKeyboard, [{ vendorId: 0x3434 }]), "deviceMatches
 assert(!deviceMatchesFilter(testKeyboard, [{ vendorId: 0x34b7 }]), "deviceMatchesFilter rejects mismatched vendorId");
 assert(deviceMatchesFilter(testKeyboard, [{ vendorId: 0x3434, usagePage: 0xff60, usage: 0x61 }]), "deviceMatchesFilter gracefully handles missing collections");
 assert(!deviceMatchesFilter(otherDevice, [{ vendorId: 0x3434 }]), "deviceMatchesFilter rejects non-Keychron device");
+
+// Hardware inspection checks
+const { inspectHardware } = require("../src/main/device-inspector");
+const hw = inspectHardware();
+assert(Array.isArray(hw.devices), "inspectHardware returns devices array");
+assert(typeof hw.hidraw.total === "number", "inspectHardware reports hidraw total count");
+assert(Array.isArray(hw.udevRules), "inspectHardware reports udev rules status");
 
 console.log("\n=============================");
 if (failures === 0) {

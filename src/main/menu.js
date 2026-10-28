@@ -2,6 +2,8 @@
 
 const { app, Menu, shell, dialog } = require("electron");
 const config = require("./config");
+const { showDeviceInspectorDialog } = require("./device-inspector");
+const { openProfilesFolder, importProfile, listProfiles } = require("./profile-manager");
 
 function buildAppMenu(mainWindow, onCheckUpdates) {
   const isMac = process.platform === "darwin";
@@ -103,9 +105,15 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
             }
           }
         },
+        {
+          label: "Connected Hardware Inspector...",
+          click: () => {
+            showDeviceInspectorDialog(mainWindow);
+          }
+        },
         { type: "separator" },
         {
-          label: "Linux Hardware Access & Permissions...",
+          label: "Linux Permissions & Driver Notes...",
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: "info",
@@ -123,13 +131,38 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
               buttons: ["OK"]
             });
           }
+        }
+      ]
+    },
+    {
+      label: "&Profiles",
+      submenu: [
+        {
+          label: "Open Profiles Directory",
+          click: () => {
+            openProfilesFolder();
+          }
         },
         {
-          label: "Connection Troubleshooting Guide",
-          click: async () => {
-            await shell.openExternal("https://www.keychron.com/pages/keymap");
+          label: "Import Keymap JSON...",
+          click: () => {
+            importProfile(mainWindow);
           }
-        }
+        },
+        { type: "separator" },
+        ...(listProfiles().length > 0
+          ? listProfiles().map((p) => ({
+              label: p.name,
+              click: () => {
+                shell.showItemInFolder(p.fullPath);
+              }
+            }))
+          : [
+              {
+                label: "No saved profiles yet",
+                enabled: false
+              }
+            ])
       ]
     },
     {

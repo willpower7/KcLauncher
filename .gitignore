@@ -4,6 +4,8 @@ node_modules/
 # Build outputs
 dist/
 build/tmp/
+apt-repo/
+src/renderer/mirrored/
 *.deb
 *.AppImage
 
@@ -22,7 +24,3 @@ kclauncher-window-state.json
 # OS files
 .DS_Store
 Thumbs.db
-
-# Local temporary and conversation notes
-conversation*.txt
-*.tmp

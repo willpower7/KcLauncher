@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { app, BrowserWindow, shell, session, dialog, screen } = require("electron");
-const { autoUpdater } = require("electron-updater");
+const https = require("node:https");
 const config = require("./config");
 const { isAllowedOrigin, isLauncherOrigin, setupHidAndUsbPermissions } = require("./hid-handler");
 const { buildAppMenu } = require("./menu");
@@ -40,6 +40,7 @@ Options:
   -d, --debug      Enable verbose debug logging
   --devtools       Open Chromium Developer Tools on launch
   --offline        Force offline diagnostic fallback mode
+  --local-mirror   Run from local mirrored assets (if present)
   --hidden         Start minimized to system tray
   --no-tray        Disable system tray icon
 `);
@@ -54,6 +55,9 @@ if (cliArgs.includes("--devtools")) {
 }
 if (cliArgs.includes("--offline")) {
   config.OFFLINE_MODE = true;
+}
+if (cliArgs.includes("--local-mirror")) {
+  config.USE_LOCAL_MIRROR = true;
 }
 
 const startHidden = cliArgs.includes("--hidden");
@@ -109,112 +113,90 @@ function getAppIconPath() {
   return undefined;
 }
 
-function initAutoUpdater() {
-  if (!app.isPackaged) return;
-
-  try {
-    const isAppImage = Boolean(process.env.APPIMAGE);
-
-    if (isAppImage) {
-      autoUpdater.autoDownload = true;
-      autoUpdater.autoInstallOnAppQuit = true;
-
-      autoUpdater.on("update-available", (info) => {
-        dialog.showMessageBox({
-          type: "info",
-          title: "Update Available",
-          message: `KcLauncher v${info.version} is available.`,
-          detail: "The update is downloading in the background and will install when you restart the app."
-        });
-      });
-
-      autoUpdater.on("update-downloaded", (info) => {
-        dialog.showMessageBox({
-          type: "info",
-          title: "Update Downloaded",
-          message: `KcLauncher v${info.version} is ready to install.`,
-          detail: "The update will be installed automatically when you exit the application."
-        });
-      });
-    } else {
-      // Debian / system package installations cannot be written to /opt by unprivileged processes
-      autoUpdater.autoDownload = false;
-      autoUpdater.autoInstallOnAppQuit = false;
-
-      autoUpdater.on("update-available", (info) => {
-        dialog
-          .showMessageBox({
-            type: "info",
-            title: "Update Available",
-            message: `KcLauncher v${info.version} is available.`,
-            detail: "A new Debian package is available on GitHub Releases.",
-            buttons: ["View on GitHub", "Later"],
-            defaultId: 0
-          })
-          .then(({ response }) => {
-            if (response === 0) {
-              shell.openExternal("https://github.com/willpower7/KcLauncher/releases");
-            }
-          });
-      });
-    }
-
-    autoUpdater.checkForUpdates().catch((err) => {
-      if (config.DEBUG) console.warn("[KcLauncher:Updater] Update check failed:", err.message);
-    });
-  } catch (err) {
-    if (config.DEBUG) console.warn("[KcLauncher:Updater] Failed to initialize updater:", err);
+function isNewerVersion(remoteTag, currentVersion) {
+  const cleanRemote = remoteTag.replace(/^v/, "").split(".").map(Number);
+  const cleanCurrent = currentVersion.replace(/^v/, "").split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    const r = cleanRemote[i] || 0;
+    const c = cleanCurrent[i] || 0;
+    if (r > c) return true;
+    if (r < c) return false;
   }
+  return false;
 }
 
-function manualCheckForUpdates() {
-  if (!app.isPackaged) {
-    dialog.showMessageBox(mainWindow, {
-      type: "info",
-      title: "Check for Updates",
-      message: "Development Mode Active",
-      detail: "Update checks against GitHub Releases are active in packaged builds."
-    });
-    return;
-  }
-
-  const isAppImage = Boolean(process.env.APPIMAGE);
-
-  autoUpdater
-    .checkForUpdates()
-    .then((result) => {
-      if (!result || !result.updateInfo) {
-        dialog.showMessageBox(mainWindow, {
-          type: "info",
-          title: "Check for Updates",
-          message: "You're up to date!",
-          detail: `KcLauncher v${app.getVersion()} is currently the newest version.`
-        });
-      } else if (!isAppImage) {
-        dialog
-          .showMessageBox(mainWindow, {
-            type: "info",
-            title: "Update Available",
-            message: `KcLauncher v${result.updateInfo.version} is available.`,
-            detail: "A new version of KcLauncher is available on GitHub Releases.",
-            buttons: ["View on GitHub", "Later"],
-            defaultId: 0
-          })
-          .then(({ response }) => {
-            if (response === 0) {
-              shell.openExternal("https://github.com/willpower7/KcLauncher/releases");
-            }
-          });
+function checkAppUpdates({ silent = false } = {}) {
+  const req = https.get(
+    "https://api.github.com/repos/willpower7/KcLauncher/releases/latest",
+    { headers: { "User-Agent": "KcLauncher-Desktop" } },
+    (res) => {
+      if (res.statusCode !== 200) {
+        if (!silent && config.DEBUG) console.warn("Update check status:", res.statusCode);
+        return;
       }
-    })
-    .catch((err) => {
+      let raw = "";
+      res.on("data", (chunk) => {
+        raw += chunk;
+      });
+      res.on("end", () => {
+        try {
+          const release = JSON.parse(raw);
+          if (release.tag_name && isNewerVersion(release.tag_name, app.getVersion())) {
+            dialog
+              .showMessageBox(mainWindow, {
+                type: "info",
+                title: "Update Available",
+                message: `KcLauncher ${release.tag_name} is available!`,
+                detail: `You are currently running v${app.getVersion()}.\n\nA new release is available with bug fixes and updates.`,
+                buttons: ["View on GitHub", "Later"],
+                defaultId: 0
+              })
+              .then(({ response }) => {
+                if (response === 0) {
+                  shell.openExternal(release.html_url || "https://github.com/willpower7/KcLauncher/releases");
+                }
+              });
+          } else if (!silent) {
+            dialog.showMessageBox(mainWindow, {
+              type: "info",
+              title: "Check for Updates",
+              message: "You're up to date!",
+              detail: `KcLauncher v${app.getVersion()} is currently the newest version.`
+            });
+          }
+        } catch (err) {
+          if (!silent) {
+            dialog.showMessageBox(mainWindow, {
+              type: "warning",
+              title: "Update Check",
+              message: "Could not parse update response.",
+              detail: err.message
+            });
+          }
+        }
+      });
+    }
+  );
+
+  req.on("error", (err) => {
+    if (!silent) {
       dialog.showMessageBox(mainWindow, {
         type: "warning",
         title: "Update Check",
         message: "Could not reach update server.",
         detail: err.message
       });
-    });
+    }
+  });
+}
+
+function initAutoUpdater() {
+  if (!app.isPackaged) return;
+  checkAppUpdates({ silent: true });
+}
+
+function manualCheckForUpdates() {
+  checkAppUpdates({ silent: false });
 }
 
 function createMainWindow() {
@@ -253,7 +235,7 @@ function createMainWindow() {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false, // Required for WebHID hardware access in Electron
+      sandbox: true,
       spellcheck: false
     }
   });
@@ -272,10 +254,14 @@ function createMainWindow() {
   // Setup WebHID and WebUSB permissions on default session
   setupHidAndUsbPermissions(session.defaultSession, mainWindow);
 
-  // Load URL or local offline fallback
-  const targetUrl = config.OFFLINE_MODE
-    ? `file://${config.FALLBACK_OFFLINE_URL}?forced=1`
-    : config.LAUNCHER_URL;
+  // Load URL, local mirrored offline build, or fallback
+  let targetUrl = config.LAUNCHER_URL;
+
+  if (config.OFFLINE_MODE) {
+    targetUrl = `file://${config.FALLBACK_OFFLINE_URL}?forced=1`;
+  } else if (config.USE_LOCAL_MIRROR && fs.existsSync(config.MIRRORED_LOCAL_URL)) {
+    targetUrl = `file://${config.MIRRORED_LOCAL_URL}`;
+  }
 
   mainWindow.loadURL(targetUrl);
 
@@ -296,7 +282,11 @@ function createMainWindow() {
     }
 
     if (validatedURL && validatedURL.startsWith("https://launcher.keychron")) {
-      mainWindow.loadFile(config.FALLBACK_OFFLINE_URL);
+      if (fs.existsSync(config.MIRRORED_LOCAL_URL)) {
+        mainWindow.loadFile(config.MIRRORED_LOCAL_URL);
+      } else {
+        mainWindow.loadFile(config.FALLBACK_OFFLINE_URL);
+      }
     }
   });
 

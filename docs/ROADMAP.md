@@ -17,7 +17,7 @@ This roadmap tracks the development milestones for **KcLauncher** from the initi
 
 ## Phase 2: Full Offline Assets Mirroring & Local Serving
 
-- [ ] **Asset Mirroring Pipeline**: Script to bundle and package Keychron Launcher's Angular frontend (`runtime`, `polyfills`, `main`, `styles`, and keyboard profile JSONs) directly into the app bundle.
+- [x] **Asset Mirroring Pipeline**: Automated script (`scripts/mirror-offline-assets.js` / `npm run mirror:assets`) to mirror Keychron Launcher's Angular bundle and run offline with `--local-mirror`.
 - [ ] **Custom Scheme / Local File Protocol**: Serve mirrored web assets via a secure `kclauncher://` protocol or internal localhost loopback server.
 - [ ] **Firmware Cache**: Local repository of common Keychron QMK firmware binaries and factory reset images for offline flashing.
 
@@ -25,13 +25,13 @@ This roadmap tracks the development milestones for **KcLauncher** from the initi
 
 ## Phase 3: Local Profiles & Keymap Backups
 
-- [ ] **Local Layout Storage**: Save and load custom VIA / Keychron keymap JSON files directly to `~/.config/kclauncher/profiles/`.
-- [ ] **One-Click Profile Switching**: Allow fast switching between gaming, coding, and macOS/Windows key layouts from the system tray.
-- [ ] **Device Diagnostics Tab**: Real-time display of USB report descriptors, firmware version, and battery percentage (for supported models).
+- [x] **Local Layout Storage**: Save and load custom VIA / Keychron keymap JSON files directly to `~/.config/kclauncher/profiles/`.
+- [x] **One-Click Profile Switching**: Fast switching and inspection of key layout profiles from the system tray and application menu.
+- [x] **Device Diagnostics & Inspector**: Real-time display of connected Keychron models, Linux hidraw node permissions, and udev rules status.
 
 ---
 
 ## Phase 4: CI/CD & Automated GitHub Releases
 
 - [x] **GitHub Actions Workflow**: Automatically build `.deb` and `.AppImage` binaries on tag pushes (`v1.0.0`, etc.).
-- [ ] **APT Repository Hosting**: Host a GitHub Pages APT repository allowing users to install and update via `apt update && apt install kclauncher`.
+- [x] **APT Repository Hosting Tooling**: Automated generator (`scripts/generate-apt-repo.sh` / `npm run generate:apt`) to produce Debian pool, Packages.gz, and Release metadata.

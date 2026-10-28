@@ -1,6 +1,6 @@
 {
   "name": "kclauncher",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Native Linux desktop application port of Keychron Launcher with WebHID support and automated udev configuration",
   "main": "src/main/index.js",
   "type": "commonjs",
@@ -30,14 +30,13 @@
     "build:appimage": "electron-builder --linux AppImage --config build/electron-builder.yml --publish never",
     "build:all": "electron-builder --linux deb AppImage --config build/electron-builder.yml --publish never",
     "pack": "electron-builder --dir --config build/electron-builder.yml",
+    "mirror:assets": "node scripts/mirror-offline-assets.js",
+    "generate:apt": "bash scripts/generate-apt-repo.sh",
     "install:udev": "bash scripts/install-udev.sh",
     "verify:udev": "bash scripts/verify-udev.sh"
   },
   "devDependencies": {
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8"
-  },
-  "dependencies": {
-    "electron-updater": "^6.3.9"
   }
 }
