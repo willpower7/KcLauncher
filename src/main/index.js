@@ -113,6 +113,20 @@ function getAppIconPath() {
   return undefined;
 }
 
+function safeOpenExternal(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== "string") return;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      shell.openExternal(parsed.href);
+    } else if (config.DEBUG) {
+      console.warn("[Security] Blocked non-http(s) external URL protocol:", rawUrl);
+    }
+  } catch (err) {
+    if (config.DEBUG) console.warn("[Security] Failed to parse external URL:", err);
+  }
+}
+
 function isNewerVersion(remoteTag, currentVersion) {
   const cleanRemote = remoteTag.replace(/^v/, "").split(".").map(Number);
   const cleanCurrent = currentVersion.replace(/^v/, "").split(".").map(Number);
@@ -153,7 +167,12 @@ function checkAppUpdates({ silent = false } = {}) {
               })
               .then(({ response }) => {
                 if (response === 0) {
-                  shell.openExternal(release.html_url || "https://github.com/willpower7/KcLauncher/releases");
+                  const targetUrl =
+                    typeof release.html_url === "string" &&
+                    release.html_url.startsWith("https://github.com/willpower7/KcLauncher")
+                      ? release.html_url
+                      : "https://github.com/willpower7/KcLauncher/releases";
+                  safeOpenExternal(targetUrl);
                 }
               });
           } else if (!silent) {
@@ -290,22 +309,23 @@ function createMainWindow() {
     }
   });
 
-  // Handle external links (open in user's default browser)
+  // Handle external links (open in user's default browser with strict scheme validation)
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isLauncherOrigin(url)) {
       mainWindow.loadURL(url);
     } else {
-      shell.openExternal(url);
+      safeOpenExternal(url);
     }
     return { action: "deny" };
   });
 
-  // Navigation guard
+  // Navigation guard (only allow official launcher origins or vetted offline files)
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (!isLauncherOrigin(url) && !url.startsWith("file://")) {
-      event.preventDefault();
-      shell.openExternal(url);
+    if (isLauncherOrigin(url) || isAllowedOrigin(url)) {
+      return;
     }
+    event.preventDefault();
+    safeOpenExternal(url);
   });
 
   // Save state on close & check background daemon setting
@@ -322,6 +342,14 @@ function createMainWindow() {
     mainWindow = null;
   });
 }
+
+// Defense-in-depth: Block unauthorized <webview> attachments
+app.on("web-contents-created", (event, contents) => {
+  contents.on("will-attach-webview", (webviewEvent) => {
+    webviewEvent.preventDefault();
+    if (config.DEBUG) console.warn("[Security] Prevented unauthorized <webview> creation");
+  });
+});
 
 // Second instance focus
 app.on("second-instance", () => {

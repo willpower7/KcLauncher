@@ -36,6 +36,11 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="1.0.2" date="2026-10-28">
+      <description>
+        <p>Security hardening and architecture updates: comprehensive SAST/SCA fixes, strict WebHID/WebUSB vendor isolation, external navigation protocol guards, hardened udev seat permissions, profile validation, and build dependency supply chain patches.</p>
+      </description>
+    </release>
     <release version="1.0.1" date="2026-10-27">
       <description>
         <p>Add status indicator icon to tray menu and fix background lifecycle behavior.</p>

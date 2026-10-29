@@ -5,18 +5,31 @@ const { dialog, Notification } = require("electron");
 const config = require("./config");
 
 function matchesHostPattern(hostname, pattern) {
-  if (pattern.startsWith("*.")) {
-    const bare = pattern.slice(2);
-    return hostname === bare || hostname.endsWith(`.${bare}`);
+  if (!hostname || !pattern || typeof hostname !== "string" || typeof pattern !== "string") {
+    return false;
   }
-  return hostname === pattern;
+  const cleanHost = hostname.toLowerCase();
+  const cleanPattern = pattern.toLowerCase();
+  if (cleanPattern.startsWith("*.")) {
+    const bare = cleanPattern.slice(2);
+    return cleanHost === bare || cleanHost.endsWith(`.${bare}`);
+  }
+  return cleanHost === cleanPattern;
 }
 
 function isAllowedOrigin(rawUrl) {
-  if (!rawUrl) return false;
+  if (!rawUrl || typeof rawUrl !== "string") return false;
   try {
     const parsed = new URL(rawUrl);
-    if (parsed.protocol === "file:") return true;
+    if (parsed.protocol === "file:") {
+      const normalizedPath = path.normalize(decodeURIComponent(parsed.pathname));
+      return (
+        normalizedPath.endsWith("/offline.html") ||
+        normalizedPath.endsWith("/mirrored/index.html") ||
+        normalizedPath === path.normalize(config.FALLBACK_OFFLINE_URL) ||
+        normalizedPath === path.normalize(config.MIRRORED_LOCAL_URL)
+      );
+    }
     if (parsed.protocol !== "https:") return false;
 
     return config.ALLOWED_HOST_PATTERNS.some((pattern) =>
@@ -187,16 +200,23 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
       return;
     }
 
-    // Fallback: Single candidate in pool
-    if (candidatePool.length === 1) {
-      logDebug("select-hid-device:singleCandidate", candidatePool[0]);
-      callback(candidatePool[0].deviceId);
-      return;
-    }
+    // If no Keychron devices are detected in the candidate pool, refuse auto-connection to foreign devices
+    logDebug("select-hid-device:noMatchingKeychron");
+    callback();
 
-    // Default to first candidate
-    logDebug("select-hid-device:fallbackFirst", candidatePool[0]);
-    callback(candidatePool[0].deviceId);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "No Keychron Device Found",
+        message: "No compatible Keychron HID device was detected.",
+        detail:
+          "Please ensure your Keychron keyboard or mouse is:\n" +
+          " 1. Connected via USB cable (WebHID cannot configure over Bluetooth)\n" +
+          " 2. Toggled to 'Cable' mode on the physical switch\n" +
+          " 3. Permitted by Linux udev rules (package includes /lib/udev/rules.d/60-keychron.rules)",
+        buttons: ["OK"]
+      });
+    }
   });
 
   // 4. WebUSB Device Picker Selection Handler (DFU / Firmware flashing)
@@ -223,7 +243,7 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
       return;
     }
 
-    // Prefer Keychron devices or bootloaders (STM32 DFU, RP2040)
+    // Only allow Keychron devices or bootloaders (STM32 DFU, RP2040)
     const matched = deviceList.find(
       (d) =>
         config.ALL_KEYCHRON_VENDORS.includes(d.vendorId) ||
@@ -236,7 +256,9 @@ function setupHidAndUsbPermissions(appSession, mainWindow) {
       return;
     }
 
-    callback(deviceList[0].deviceId);
+    // Security hardening: Deny raw WebUSB access to non-Keychron / foreign USB devices
+    logDebug("select-usb-device:deniedNonKeychron");
+    callback();
   });
 
   // 5. HID Device Attached/Removed Listeners with Native Desktop Notifications

@@ -31,25 +31,25 @@ KcLauncher includes [60-keychron.rules](../build/udev/60-keychron.rules):
 
 ```udev
 # Vendor ID 0x3434 (Keychron / Lemokey keyboards and mice)
-KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0666", TAG+="uaccess"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="3434", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="3434", ENV{DEVTYPE}=="usb_device", MODE="0660", GROUP="plugdev", TAG+="uaccess"
 
 # Vendor ID 0x34b7 (XinJi / Keychron wireless mice & 4K/8K receivers)
-KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="34b7", MODE="0666", TAG+="uaccess"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="34b7", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="34b7", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="34b7", ENV{DEVTYPE}=="usb_device", MODE="0660", GROUP="plugdev", TAG+="uaccess"
 
 # STM32 DFU Bootloader (Keychron firmware flashing / factory resets)
-SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", ENV{DEVTYPE}=="usb_device", MODE="0660", GROUP="plugdev", TAG+="uaccess"
 
 # Raspberry Pi RP2040 Bootloader (QMK Keychron boards)
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", ENV{DEVTYPE}=="usb_device", MODE="0666", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", ENV{DEVTYPE}=="usb_device", MODE="0660", GROUP="plugdev", TAG+="uaccess"
 ```
 
 ### Rule Breakdown:
 
 * **`ATTRS{idVendor}=="3434"`**: Matches any hardware device manufactured by Keychron (or Lemokey).
 * **`TAG+="uaccess"`**: In modern systemd-based Linux systems (Ubuntu, Pop!_OS, Debian, Fedora), `uaccess` tells `systemd-logind` to dynamically grant POSIX ACL read/write permissions to the currently active seat/user at the desktop session.
-* **`MODE="0666"`**: Fallback permissions allowing read/write access for non-systemd or container environments.
+* **`MODE="0660", GROUP="plugdev"`**: Secure permissions granting access to the seat user and `plugdev` group while preventing unprivileged local background daemons or unauthorized users from sniffing raw keyboard HID device nodes.
 
 ---
 

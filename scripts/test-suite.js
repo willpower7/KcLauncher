@@ -142,6 +142,9 @@ assert(!matchesHostPattern("google.com", "*.keychron.com"), "matchesHostPattern 
 assert(isAllowedOrigin("https://launcher.keychron.com"), "isAllowedOrigin permits https launcher");
 assert(isAllowedOrigin("https://www.keychron.com/pages/keymap"), "isAllowedOrigin permits https keychron store page");
 assert(isAllowedOrigin("file:///opt/Keychron/offline.html"), "isAllowedOrigin permits local file://");
+assert(!isAllowedOrigin("file:///etc/passwd"), "isAllowedOrigin rejects unauthorized system file path");
+assert(!isAllowedOrigin("file:///tmp/malicious.html"), "isAllowedOrigin rejects arbitrary file path");
+assert(!isAllowedOrigin("javascript:alert(1)"), "isAllowedOrigin rejects javascript URI");
 assert(!isAllowedOrigin("http://launcher.keychron.com"), "isAllowedOrigin rejects insecure http");
 assert(!isAllowedOrigin("https://attacker.com"), "isAllowedOrigin rejects unknown domain");
 

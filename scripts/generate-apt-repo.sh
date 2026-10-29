@@ -34,6 +34,7 @@ else
     echo "Notice: dpkg-scanpackages not found, generating metadata using dpkg-deb..."
     > "$DISTS_DIR/Packages"
     for deb in pool/main/*.deb; do
+        [ -f "$deb" ] || continue
         dpkg-deb -I "$deb" | awk '
             BEGIN { FS=": " }
             /Package:/ { print "Package: " $2 }
@@ -47,19 +48,19 @@ else
             /Description:/ { print "Description: " $2 }
         ' >> "$DISTS_DIR/Packages"
         FILESIZE=$(stat -c%s "$deb")
-        MD5=$(md5sum "$deb" | awk '{print $1}')
         SHA256=$(sha256sum "$deb" | awk '{print $1}')
+        SHA512=$(sha512sum "$deb" | awk '{print $1}')
         echo "Filename: $deb" >> "$DISTS_DIR/Packages"
         echo "Size: $FILESIZE" >> "$DISTS_DIR/Packages"
-        echo "MD5sum: $MD5" >> "$DISTS_DIR/Packages"
         echo "SHA256: $SHA256" >> "$DISTS_DIR/Packages"
+        echo "SHA512: $SHA512" >> "$DISTS_DIR/Packages"
         echo "" >> "$DISTS_DIR/Packages"
     done
 fi
 
 gzip -9c "$DISTS_DIR/Packages" > "$DISTS_DIR/Packages.gz"
 
-echo "Generating Release file..."
+echo "Generating Release file with cryptographic verification digests..."
 cat <<EOF > "${REPO_DIR}/dists/stable/Release"
 Origin: KcLauncher APT Repository
 Label: KcLauncher
@@ -69,6 +70,28 @@ Architectures: amd64
 Components: main
 Description: Native Linux desktop application for Keychron Launcher
 Date: $(date -Ru)
+EOF
+
+# Calculate checksums for Packages and Packages.gz relative to dists/stable
+cd "${REPO_DIR}/dists/stable"
+PKG_FILE="main/binary-amd64/Packages"
+PKG_GZ_FILE="main/binary-amd64/Packages.gz"
+
+PKG_SIZE=$(stat -c%s "$PKG_FILE")
+PKG_SHA256=$(sha256sum "$PKG_FILE" | awk '{print $1}')
+PKG_SHA512=$(sha512sum "$PKG_FILE" | awk '{print $1}')
+
+PKG_GZ_SIZE=$(stat -c%s "$PKG_GZ_FILE")
+PKG_GZ_SHA256=$(sha256sum "$PKG_GZ_FILE" | awk '{print $1}')
+PKG_GZ_SHA512=$(sha512sum "$PKG_GZ_FILE" | awk '{print $1}')
+
+cat <<EOF >> "${REPO_DIR}/dists/stable/Release"
+SHA256:
+ $PKG_SHA256 $PKG_SIZE $PKG_FILE
+ $PKG_GZ_SHA256 $PKG_GZ_SIZE $PKG_GZ_FILE
+SHA512:
+ $PKG_SHA512 $PKG_SIZE $PKG_FILE
+ $PKG_GZ_SHA512 $PKG_GZ_SIZE $PKG_GZ_FILE
 EOF
 
 echo ""

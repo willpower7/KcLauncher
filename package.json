@@ -37,6 +37,10 @@
   },
   "devDependencies": {
     "electron": "^33.4.11",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^26.18.0"
+  },
+  "overrides": {
+    "tar": "^7.5.22",
+    "builder-util-runtime": "^9.7.0"
   }
 }

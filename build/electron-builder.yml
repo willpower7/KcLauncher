@@ -25,12 +25,13 @@ linux:
   description: Standalone Linux desktop application providing complete Keychron keyboard and mouse configuration via WebHID without a web browser.
   icon: src/assets/icons
   desktop:
-    Name: Keychron Launcher
-    GenericName: Keyboard & Mouse Configurator
-    Comment: Configure Keychron keyboards, macros, lighting, and keymaps via WebHID
-    Categories: Settings;HardwareSettings;
-    StartupWMClass: kclauncher
-    Keywords: Keychron;Keyboard;Mouse;QMK;VIA;WebHID;Launcher;
+    entry:
+      Name: Keychron Launcher
+      GenericName: Keyboard & Mouse Configurator
+      Comment: Configure Keychron keyboards, macros, lighting, and keymaps via WebHID
+      Categories: Settings;HardwareSettings;
+      StartupWMClass: kclauncher
+      Keywords: Keychron;Keyboard;Mouse;QMK;VIA;WebHID;Launcher;
   extraFiles:
     - from: build/udev/60-keychron.rules
       to: lib/udev/rules.d/60-keychron.rules

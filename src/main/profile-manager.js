@@ -49,6 +49,18 @@ function openProfilesFolder() {
   shell.openPath(dir);
 }
 
+const MAX_PROFILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+function sanitizeProfileFilename(rawFilename) {
+  const base = path.basename(rawFilename).trim();
+  // Strip non-alphanumeric/safe characters, preventing traversal or hidden files
+  const sanitized = base.replace(/[^a-zA-Z0-9_\-. ]/g, "_");
+  if (!sanitized.toLowerCase().endsWith(".json")) {
+    return `${sanitized}.json`;
+  }
+  return sanitized;
+}
+
 function importProfile(parentWindow) {
   const dir = getProfilesDir();
   dialog
@@ -58,18 +70,53 @@ function importProfile(parentWindow) {
       filters: [{ name: "Keymap JSON (*.json)", extensions: ["json"] }]
     })
     .then(({ canceled, filePaths }) => {
-      if (!canceled && filePaths.length > 0) {
-        const srcPath = filePaths[0];
-        const destPath = path.join(dir, path.basename(srcPath));
-        fs.copyFileSync(srcPath, destPath);
+      if (canceled || !filePaths || filePaths.length === 0) return;
+      const srcPath = filePaths[0];
+
+      try {
+        const stats = fs.statSync(srcPath);
+        if (stats.size > MAX_PROFILE_SIZE) {
+          dialog.showMessageBox(parentWindow, {
+            type: "error",
+            title: "File Too Large",
+            message: "The selected profile file exceeds the 5MB size limit."
+          });
+          return;
+        }
+
+        const rawContent = fs.readFileSync(srcPath, "utf-8");
+        const parsed = JSON.parse(rawContent);
+        if (!parsed || typeof parsed !== "object") {
+          throw new Error("Profile must contain a JSON object or array.");
+        }
+
+        const safeFilename = sanitizeProfileFilename(path.basename(srcPath));
+        const destPath = path.resolve(dir, safeFilename);
+
+        if (!destPath.startsWith(path.resolve(dir) + path.sep)) {
+          throw new Error("Invalid profile destination path.");
+        }
+
+        fs.writeFileSync(destPath, JSON.stringify(parsed, null, 2), "utf-8");
 
         dialog.showMessageBox(parentWindow, {
           type: "info",
           title: "Profile Imported",
-          message: `Imported "${path.basename(srcPath)}"`,
+          message: `Imported "${safeFilename}"`,
           detail: `Profile saved to: ${destPath}\nYou can select it from the Profiles menu anytime.`
         });
+      } catch (err) {
+        if (config.DEBUG) console.error("Failed to import profile:", err);
+        dialog.showMessageBox(parentWindow, {
+          type: "error",
+          title: "Import Failed",
+          message: "Could not import profile file.",
+          detail: err.message
+        });
       }
+    })
+    .catch((err) => {
+      if (config.DEBUG) console.error("Open dialog error:", err);
     });
 }
 
