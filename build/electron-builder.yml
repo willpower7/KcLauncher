@@ -55,5 +55,5 @@ deb:
     - libnotify4
     - libsecret-1-0
     - libnss3
-    - libasound2
+    - libasound2 | libasound2t64
     - udev

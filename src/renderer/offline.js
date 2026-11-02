@@ -3,6 +3,10 @@
 const LAUNCHER_TARGET = "https://launcher.keychron.com";
 const statusText = document.getElementById("reconnectStatus");
 const statusDot = document.querySelector(".status-dot");
+const btnRetry = document.getElementById("btnRetry");
+const btnDiagnostic = document.getElementById("btnDiagnostic");
+const diagnosticsBox = document.getElementById("diagnosticsBox");
+
 let checkCount = 0;
 let isReconnecting = false;
 
@@ -16,7 +20,8 @@ function checkConnectivity() {
 
   fetch(`${LAUNCHER_TARGET}/favicon.ico?_=${Date.now()}`, {
     mode: "no-cors",
-    cache: "no-store"
+    cache: "no-store",
+    signal: AbortSignal.timeout(3000)
   })
     .then(() => {
       isReconnecting = true;
@@ -43,12 +48,15 @@ if (isForcedOffline) {
   window.addEventListener("online", checkConnectivity);
 }
 
-document.getElementById("btnRetry").addEventListener("click", () => {
-  if (statusText) statusText.textContent = "Connecting...";
-  window.location.href = LAUNCHER_TARGET;
-});
+if (btnRetry) {
+  btnRetry.addEventListener("click", () => {
+    if (statusText) statusText.textContent = "Connecting...";
+    window.location.href = LAUNCHER_TARGET;
+  });
+}
 
-document.getElementById("btnDiagnostic").addEventListener("click", () => {
-  const box = document.getElementById("diagnosticsBox");
-  box.classList.toggle("hidden");
-});
+if (btnDiagnostic && diagnosticsBox) {
+  btnDiagnostic.addEventListener("click", () => {
+    diagnosticsBox.classList.toggle("hidden");
+  });
+}

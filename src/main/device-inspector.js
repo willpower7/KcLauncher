@@ -83,6 +83,7 @@ function inspectHardware() {
 }
 
 function showDeviceInspectorDialog(parentWindow) {
+  const win = parentWindow && !parentWindow.isDestroyed() ? parentWindow : null;
   const { devices, hidraw, udevRules } = inspectHardware();
 
   let message = "";
@@ -109,7 +110,7 @@ function showDeviceInspectorDialog(parentWindow) {
     detail += "Active udev Rule: None detected (run 'bash scripts/install-udev.sh')\n";
   }
 
-  dialog.showMessageBox(parentWindow, {
+  dialog.showMessageBox(win, {
     type: devices.length > 0 ? "info" : "warning",
     title: "Keychron Hardware Inspector",
     message,

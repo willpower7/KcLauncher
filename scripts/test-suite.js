@@ -142,6 +142,7 @@ assert(!matchesHostPattern("google.com", "*.keychron.com"), "matchesHostPattern 
 assert(isAllowedOrigin("https://launcher.keychron.com"), "isAllowedOrigin permits https launcher");
 assert(isAllowedOrigin("https://www.keychron.com/pages/keymap"), "isAllowedOrigin permits https keychron store page");
 assert(isAllowedOrigin("file:///opt/Keychron/offline.html"), "isAllowedOrigin permits local file://");
+assert(!isAllowedOrigin("file:///tmp/offline.html"), "isAllowedOrigin rejects spoofed offline.html filename");
 assert(!isAllowedOrigin("file:///etc/passwd"), "isAllowedOrigin rejects unauthorized system file path");
 assert(!isAllowedOrigin("file:///tmp/malicious.html"), "isAllowedOrigin rejects arbitrary file path");
 assert(!isAllowedOrigin("javascript:alert(1)"), "isAllowedOrigin rejects javascript URI");
@@ -152,6 +153,15 @@ assert(!isAllowedOrigin("https://attacker.com"), "isAllowedOrigin rejects unknow
 assert(isLauncherOrigin("https://launcher.keychron.com"), "isLauncherOrigin permits launcher.keychron.com");
 assert(isLauncherOrigin("https://launcher.keychron.cn"), "isLauncherOrigin permits launcher.keychron.cn");
 assert(!isLauncherOrigin("https://www.keychron.com/products/k2"), "isLauncherOrigin rejects store page");
+assert(!isLauncherOrigin("file:///etc/passwd"), "isLauncherOrigin rejects arbitrary local files");
+assert(isLauncherOrigin("file:///opt/Keychron/offline.html"), "isLauncherOrigin permits authorized offline path");
+
+// Profile filename sanitization checks
+const { sanitizeProfileFilename } = require("../src/main/profile-manager");
+assert(sanitizeProfileFilename("custom-q1.json") === "custom-q1.json", "sanitizeProfileFilename retains valid filename");
+assert(sanitizeProfileFilename("../../../etc/passwd") === "passwd.json", "sanitizeProfileFilename prevents path traversal");
+assert(sanitizeProfileFilename(".hidden-profile") === "hidden-profile.json", "sanitizeProfileFilename strips leading dots");
+assert(sanitizeProfileFilename("") !== ".json" && sanitizeProfileFilename("").endsWith(".json"), "sanitizeProfileFilename handles empty strings safely");
 
 // Device filter matching
 const testKeyboard = { vendorId: 0x3434, productId: 0x0240, name: "Keychron Q1" };

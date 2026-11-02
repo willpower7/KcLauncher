@@ -45,8 +45,10 @@ function getStatusIcon(isEnabled) {
   return null;
 }
 
-function createTray(mainWindow, onCheckUpdates) {
+function createTray(mainWindow, onCheckUpdates, initialRunInBackground = false, onToggleBackground = null) {
   if (tray) return tray;
+
+  runInBackground = Boolean(initialRunInBackground);
 
   const icon = getTrayIcon();
   if (!icon) {
@@ -59,11 +61,12 @@ function createTray(mainWindow, onCheckUpdates) {
     tray.setToolTip(`${config.APP_TITLE} (Keychron Configurator)`);
 
     const updateContextMenu = () => {
+      const profiles = listProfiles();
       const contextMenu = Menu.buildFromTemplate([
         {
           label: `Open ${config.APP_TITLE}`,
           click: () => {
-            if (mainWindow) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
               if (mainWindow.isMinimized()) mainWindow.restore();
               mainWindow.show();
               mainWindow.focus();
@@ -95,8 +98,8 @@ function createTray(mainWindow, onCheckUpdates) {
               }
             },
             { type: "separator" },
-            ...(listProfiles().length > 0
-              ? listProfiles().map((p) => ({
+            ...(profiles.length > 0
+              ? profiles.map((p) => ({
                   label: p.name,
                   click: () => {
                     shell.showItemInFolder(p.fullPath);
@@ -119,6 +122,9 @@ function createTray(mainWindow, onCheckUpdates) {
           click: (menuItem) => {
             runInBackground = menuItem.checked !== undefined ? menuItem.checked : !runInBackground;
             updateContextMenu();
+            if (typeof onToggleBackground === "function") {
+              onToggleBackground(runInBackground);
+            }
           }
         },
         ...(onCheckUpdates
@@ -145,11 +151,12 @@ function createTray(mainWindow, onCheckUpdates) {
     updateContextMenu();
 
     tray.on("click", () => {
-      if (!mainWindow) return;
+      if (!mainWindow || mainWindow.isDestroyed()) return;
       if (mainWindow.isVisible()) {
         if (mainWindow.isFocused()) {
           mainWindow.hide();
         } else {
+          mainWindow.show();
           mainWindow.focus();
         }
       } else {

@@ -2,6 +2,7 @@
 
 const { app, Menu, shell, dialog } = require("electron");
 const config = require("./config");
+const { safeOpenExternal } = require("./hid-handler");
 const { showDeviceInspectorDialog } = require("./device-inspector");
 const { openProfilesFolder, importProfile, listProfiles } = require("./profile-manager");
 
@@ -35,7 +36,7 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
           accelerator: "CmdOrCtrl+Home",
           click: () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.loadURL(config.LAUNCHER_URL);
+              mainWindow.loadURL(config.getHomeUrl());
             }
           }
         },
@@ -115,7 +116,8 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
         {
           label: "Linux Permissions & Driver Notes...",
           click: () => {
-            dialog.showMessageBox(mainWindow, {
+            const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+            dialog.showMessageBox(win, {
               type: "info",
               title: "Linux Hardware Access Status",
               message: "Keychron Hardware Permissions & Drivers",
@@ -170,14 +172,14 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
       submenu: [
         {
           label: "Keychron Official Guide",
-          click: async () => {
-            await shell.openExternal("https://www.keychron.com/pages/keymap");
+          click: () => {
+            safeOpenExternal("https://www.keychron.com/pages/keymap");
           }
         },
         {
           label: "Firmware Flashing Guide",
-          click: async () => {
-            await shell.openExternal(
+          click: () => {
+            safeOpenExternal(
               "https://www.keychron.com/pages/how-to-factory-reset-or-use-the-launcher-web-app-to-flash-firmware-for-your-keyboard"
             );
           }
@@ -195,7 +197,8 @@ function buildAppMenu(mainWindow, onCheckUpdates) {
         {
           label: "About KcLauncher",
           click: () => {
-            dialog.showMessageBox(mainWindow, {
+            const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+            dialog.showMessageBox(win, {
               type: "info",
               title: "About KcLauncher",
               message: `KcLauncher v${app.getVersion()}`,

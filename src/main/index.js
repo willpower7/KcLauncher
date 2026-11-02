@@ -2,10 +2,14 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, BrowserWindow, shell, session, dialog, screen } = require("electron");
-const https = require("node:https");
+const { app, BrowserWindow, session, dialog, screen } = require("electron");
 const config = require("./config");
-const { isAllowedOrigin, isLauncherOrigin, setupHidAndUsbPermissions } = require("./hid-handler");
+const {
+  isAllowedOrigin,
+  isLauncherOrigin,
+  safeOpenExternal,
+  setupHidAndUsbPermissions
+} = require("./hid-handler");
 const { buildAppMenu } = require("./menu");
 const { createTray, shouldRunInBackground, destroyTray } = require("./tray");
 
@@ -19,14 +23,14 @@ app.setName("Keychron Launcher");
 app.setAppUserModelId("com.willpower7.kclauncher");
 
 // Parse Command Line Arguments
-const cliArgs = process.argv.slice(1);
+const cliArgs = new Set(process.argv.slice(1));
 
-if (cliArgs.includes("-v") || cliArgs.includes("--version")) {
+if (cliArgs.has("-v") || cliArgs.has("--version")) {
   console.log(`KcLauncher v${app.getVersion()}`);
   process.exit(0);
 }
 
-if (cliArgs.includes("-h") || cliArgs.includes("--help")) {
+if (cliArgs.has("-h") || cliArgs.has("--help")) {
   console.log(`
 KcLauncher v${app.getVersion()}
 Native Linux desktop application port of Keychron Launcher
@@ -47,21 +51,21 @@ Options:
   process.exit(0);
 }
 
-if (cliArgs.includes("-d") || cliArgs.includes("--debug")) {
+if (cliArgs.has("-d") || cliArgs.has("--debug")) {
   config.DEBUG = true;
 }
-if (cliArgs.includes("--devtools")) {
+if (cliArgs.has("--devtools")) {
   config.DEVTOOLS = true;
 }
-if (cliArgs.includes("--offline")) {
+if (cliArgs.has("--offline")) {
   config.OFFLINE_MODE = true;
 }
-if (cliArgs.includes("--local-mirror")) {
+if (cliArgs.has("--local-mirror")) {
   config.USE_LOCAL_MIRROR = true;
 }
 
-const startHidden = cliArgs.includes("--hidden");
-const disableTray = cliArgs.includes("--no-tray");
+const startHidden = cliArgs.has("--hidden");
+const disableTray = cliArgs.has("--no-tray");
 
 // Prevent multiple instances
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
@@ -80,12 +84,21 @@ function getWindowStateFilePath() {
 function loadWindowState() {
   try {
     const raw = fs.readFileSync(getWindowStateFilePath(), "utf-8");
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return {
+      width: parsed.width || config.WINDOW.DEFAULT_WIDTH,
+      height: parsed.height || config.WINDOW.DEFAULT_HEIGHT,
+      x: parsed.x,
+      y: parsed.y,
+      isMaximized: Boolean(parsed.isMaximized),
+      runInBackground: Boolean(parsed.runInBackground)
+    };
   } catch {
     return {
       width: config.WINDOW.DEFAULT_WIDTH,
       height: config.WINDOW.DEFAULT_HEIGHT,
-      isMaximized: false
+      isMaximized: false,
+      runInBackground: false
     };
   }
 }
@@ -93,15 +106,17 @@ function loadWindowState() {
 function saveWindowState(win) {
   if (!win || win.isDestroyed()) return;
   try {
-    const bounds = win.getBounds();
+    const isMax = win.isMaximized();
+    const bounds = isMax ? win.getNormalBounds() : win.getBounds();
     const state = {
       x: bounds.x,
       y: bounds.y,
       width: bounds.width,
       height: bounds.height,
-      isMaximized: win.isMaximized()
+      isMaximized: isMax,
+      runInBackground: shouldRunInBackground()
     };
-    fs.writeFileSync(getWindowStateFilePath(), JSON.stringify(state), "utf-8");
+    fs.writeFileSync(getWindowStateFilePath(), JSON.stringify(state, null, 2), "utf-8");
   } catch (err) {
     if (config.DEBUG) console.error("Failed to save window state:", err);
   }
@@ -113,109 +128,84 @@ function getAppIconPath() {
   return undefined;
 }
 
-function safeOpenExternal(rawUrl) {
-  if (!rawUrl || typeof rawUrl !== "string") return;
-  try {
-    const parsed = new URL(rawUrl);
-    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
-      shell.openExternal(parsed.href);
-    } else if (config.DEBUG) {
-      console.warn("[Security] Blocked non-http(s) external URL protocol:", rawUrl);
-    }
-  } catch (err) {
-    if (config.DEBUG) console.warn("[Security] Failed to parse external URL:", err);
-  }
-}
-
 function isNewerVersion(remoteTag, currentVersion) {
-  const cleanRemote = remoteTag.replace(/^v/, "").split(".").map(Number);
-  const cleanCurrent = currentVersion.replace(/^v/, "").split(".").map(Number);
+  const parseSemver = (v) =>
+    v.replace(/^v/, "").split("-")[0].split(".").map((n) => parseInt(n, 10) || 0);
+  const r = parseSemver(remoteTag);
+  const c = parseSemver(currentVersion);
   for (let i = 0; i < 3; i++) {
-    const r = cleanRemote[i] || 0;
-    const c = cleanCurrent[i] || 0;
-    if (r > c) return true;
-    if (r < c) return false;
+    const rVal = r[i] ?? 0;
+    const cVal = c[i] ?? 0;
+    if (rVal > cVal) return true;
+    if (rVal < cVal) return false;
   }
   return false;
 }
 
-function checkAppUpdates({ silent = false } = {}) {
-  const req = https.get(
-    "https://api.github.com/repos/willpower7/KcLauncher/releases/latest",
-    { headers: { "User-Agent": "KcLauncher-Desktop" } },
-    (res) => {
-      if (res.statusCode !== 200) {
-        if (!silent && config.DEBUG) console.warn("Update check status:", res.statusCode);
-        return;
-      }
-      let raw = "";
-      res.on("data", (chunk) => {
-        raw += chunk;
+async function checkAppUpdates({ silent = false } = {}) {
+  try {
+    const res = await fetch("https://api.github.com/repos/willpower7/KcLauncher/releases/latest", {
+      headers: {
+        "User-Agent": "KcLauncher-Desktop",
+        "Accept": "application/vnd.github.v3+json"
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!res.ok) {
+      if (!silent && config.DEBUG) console.warn("Update check status:", res.status);
+      return;
+    }
+
+    const release = await res.json();
+    const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+
+    if (release.tag_name && isNewerVersion(release.tag_name, app.getVersion())) {
+      const { response } = await dialog.showMessageBox(win, {
+        type: "info",
+        title: "Update Available",
+        message: `KcLauncher ${release.tag_name} is available!`,
+        detail: `You are currently running v${app.getVersion()}.\n\nA new release is available with bug fixes and updates.`,
+        buttons: ["View on GitHub", "Later"],
+        defaultId: 0
       });
-      res.on("end", () => {
-        try {
-          const release = JSON.parse(raw);
-          if (release.tag_name && isNewerVersion(release.tag_name, app.getVersion())) {
-            dialog
-              .showMessageBox(mainWindow, {
-                type: "info",
-                title: "Update Available",
-                message: `KcLauncher ${release.tag_name} is available!`,
-                detail: `You are currently running v${app.getVersion()}.\n\nA new release is available with bug fixes and updates.`,
-                buttons: ["View on GitHub", "Later"],
-                defaultId: 0
-              })
-              .then(({ response }) => {
-                if (response === 0) {
-                  const targetUrl =
-                    typeof release.html_url === "string" &&
-                    release.html_url.startsWith("https://github.com/willpower7/KcLauncher")
-                      ? release.html_url
-                      : "https://github.com/willpower7/KcLauncher/releases";
-                  safeOpenExternal(targetUrl);
-                }
-              });
-          } else if (!silent) {
-            dialog.showMessageBox(mainWindow, {
-              type: "info",
-              title: "Check for Updates",
-              message: "You're up to date!",
-              detail: `KcLauncher v${app.getVersion()} is currently the newest version.`
-            });
-          }
-        } catch (err) {
-          if (!silent) {
-            dialog.showMessageBox(mainWindow, {
-              type: "warning",
-              title: "Update Check",
-              message: "Could not parse update response.",
-              detail: err.message
-            });
-          }
-        }
+
+      if (response === 0) {
+        const targetUrl =
+          typeof release.html_url === "string" &&
+          release.html_url.startsWith("https://github.com/willpower7/KcLauncher")
+            ? release.html_url
+            : "https://github.com/willpower7/KcLauncher/releases";
+        safeOpenExternal(targetUrl);
+      }
+    } else if (!silent) {
+      await dialog.showMessageBox(win, {
+        type: "info",
+        title: "Check for Updates",
+        message: "You're up to date!",
+        detail: `KcLauncher v${app.getVersion()} is currently the newest version.`
       });
     }
-  );
-
-  req.on("error", (err) => {
+  } catch (err) {
     if (!silent) {
-      dialog.showMessageBox(mainWindow, {
+      const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+      await dialog.showMessageBox(win, {
         type: "warning",
         title: "Update Check",
-        message: "Could not reach update server.",
+        message: "Could not check for updates.",
         detail: err.message
       });
     }
-  });
+  }
 }
 
 function initAutoUpdater() {
   if (!app.isPackaged) return;
-  checkAppUpdates({ silent: true });
+  checkAppUpdates({ silent: true }).catch(() => {});
 }
 
 function manualCheckForUpdates() {
-  checkAppUpdates({ silent: false });
+  checkAppUpdates({ silent: false }).catch(() => {});
 }
 
 function createMainWindow() {
@@ -255,6 +245,7 @@ function createMainWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      webSecurity: true,
       spellcheck: false
     }
   });
@@ -267,22 +258,16 @@ function createMainWindow() {
   buildAppMenu(mainWindow, manualCheckForUpdates);
 
   if (!disableTray) {
-    createTray(mainWindow, manualCheckForUpdates);
+    createTray(mainWindow, manualCheckForUpdates, windowState.runInBackground, () => {
+      saveWindowState(mainWindow);
+    });
   }
 
   // Setup WebHID and WebUSB permissions on default session
   setupHidAndUsbPermissions(session.defaultSession, mainWindow);
 
   // Load URL, local mirrored offline build, or fallback
-  let targetUrl = config.LAUNCHER_URL;
-
-  if (config.OFFLINE_MODE) {
-    targetUrl = `file://${config.FALLBACK_OFFLINE_URL}?forced=1`;
-  } else if (config.USE_LOCAL_MIRROR && fs.existsSync(config.MIRRORED_LOCAL_URL)) {
-    targetUrl = `file://${config.MIRRORED_LOCAL_URL}`;
-  }
-
-  mainWindow.loadURL(targetUrl);
+  mainWindow.loadURL(config.getHomeUrl());
 
   // Show window once DOM is ready (unless starting hidden)
   mainWindow.once("ready-to-show", () => {
@@ -295,7 +280,10 @@ function createMainWindow() {
   });
 
   // Handle load failure (e.g. offline)
-  mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription, validatedURL) => {
+  mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    // Ignore aborted navigations or non-top-level frame failures
+    if (errorCode === -3 || !isMainFrame) return;
+
     if (config.DEBUG) {
       console.warn(`[KcLauncher] did-fail-load: ${errorCode} - ${errorDescription} on ${validatedURL}`);
     }
@@ -353,7 +341,7 @@ app.on("web-contents-created", (event, contents) => {
 
 // Second instance focus
 app.on("second-instance", () => {
-  if (mainWindow) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     if (!mainWindow.isVisible()) mainWindow.show();
     mainWindow.focus();

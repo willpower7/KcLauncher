@@ -2,9 +2,7 @@
 
 const { contextBridge } = require("electron");
 
-// Expose safe system capabilities to renderer if needed
+// Expose safe desktop integration indicator without leaking sensitive runtime versions
 contextBridge.exposeInMainWorld("kclauncher", {
-  platform: process.platform,
-  isElectron: true,
-  version: process.versions.electron
+  isElectron: true
 });
